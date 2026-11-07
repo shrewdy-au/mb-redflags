@@ -1,0 +1,324 @@
+{
+ "_note": "SYNTHETIC FIXTURE. Hand-written to the shape of the Microburbs OpenAPI examples. Not API output; values are invented and say nothing about the real address.",
+ "slug": "surry-hills-clean",
+ "match_suburbs": [
+  "surry hills"
+ ],
+ "suburb_upper": "SURRY HILLS",
+ "routes": {
+  "/v1/geocode/address": {
+   "data": [
+    {
+     "abbr": "",
+     "display_name": "88 Riley Street, Surry Hills",
+     "id": "GASYN000000002",
+     "name": "88 Riley Street, Surry Hills",
+     "property_type": "house"
+    }
+   ]
+  },
+  "/v1/properties/GASYN000000002/profile": {
+   "data": {
+    "gccsa": "Greater Sydney",
+    "lga": "Sydney",
+    "mesh_block": "99000000011",
+    "postcode": "2010",
+    "sa1": "99000000111",
+    "sa2": "Surry Hills",
+    "sa3": "Sydney Inner City",
+    "sa4": "Sydney - City and Inner South",
+    "state": "NSW",
+    "suburb": "Surry Hills"
+   }
+  },
+  "/v1/properties/GASYN000000002/risks/all": {
+   "data": {
+    "bushfire": [],
+    "flood": [
+     {
+      "area_level": "Layer",
+      "area_name": "Risk Layer",
+      "name": "Flood",
+      "nearest_distance_m": 610.0,
+      "on_property": false,
+      "search_radius_m": 1000,
+      "value": "Not on property; nearest 610 m away",
+      "features_within_radius": 2
+     }
+    ],
+    "historical_flood": [],
+    "heritage": [
+     {
+      "area_level": "Layer",
+      "area_name": "Risk Layer",
+      "name": "Heritage",
+      "nearest_distance_m": 260.0,
+      "on_property": false,
+      "search_radius_m": 1000,
+      "value": "Not on property; nearest 260 m away",
+      "features_within_radius": 14
+     }
+    ],
+    "public_housing": [
+     {
+      "area_level": "Layer",
+      "area_name": "Risk Layer",
+      "name": "Public Housing",
+      "nearest_distance_m": 0.0,
+      "on_property": true,
+      "search_radius_m": 1000,
+      "value": "2.1%",
+      "value_unit": "Properties Proportion"
+     },
+     {
+      "area_level": "Layer",
+      "area_name": "Risk Layer",
+      "name": "Public Housing",
+      "nearest_distance_m": 540.0,
+      "on_property": false,
+      "search_radius_m": 1000,
+      "value": "7.9%",
+      "value_unit": "Properties Proportion"
+     }
+    ],
+    "landslide": [],
+    "erosion": [],
+    "environment": [
+     {
+      "area_level": "Layer",
+      "area_name": "Risk Layer",
+      "name": "Environment",
+      "nearest_distance_m": 690.0,
+      "on_property": false,
+      "search_radius_m": 1000,
+      "value": "Not on property; nearest 690 m away",
+      "features_within_radius": 1
+     }
+    ],
+    "hv_power_line": [
+     {
+      "area_level": "Layer",
+      "area_name": "Risk Layer",
+      "name": "HV Power Line",
+      "nearest_distance_m": 880.0,
+      "on_property": false,
+      "search_radius_m": 1000,
+      "value": "Not on property; nearest 880 m away",
+      "features_within_radius": 1
+     }
+    ],
+    "mobile_black_spot": []
+   }
+  },
+  "/v1/properties/GASYN000000002/surroundings/public-housing": {
+   "data": {
+    "flagged": [
+     {
+      "address": "5 Placeholder Lane",
+      "gnaf_pid": "GASYN000000201",
+      "lat": -33.8811,
+      "lng": 151.2133,
+      "ph_chance": 0.71
+     }
+    ],
+    "flagged_count": 2,
+    "property_count": 181,
+    "gnaf_pid": "GASYN000000002",
+    "radius_m": 200
+   }
+  },
+  "/v1/properties/GASYN000000002/street/profile": {
+   "data": {
+    "address": "88 Riley Street",
+    "street": "Riley Street",
+    "streets_in_suburb": 120,
+    "profile": {
+     "street": "Riley St",
+     "title": "Riley Street",
+     "current_price": 1950000.0,
+     "n_sales": 52,
+     "target_2y": 2260000.0,
+     "annual_2y": 7.7,
+     "target_4y": 2640000.0,
+     "annual_4y": 7.8,
+     "target_8y": 3420000.0,
+     "annual_8y": 7.3,
+     "past_growth_pct": 4.6,
+     "confidence": "Medium",
+     "history": [
+      {
+       "year": 2024,
+       "price": 1720000.0,
+       "suburb_med": 1600000
+      },
+      {
+       "year": 2025,
+       "price": 1840000.0,
+       "suburb_med": 1660000
+      },
+      {
+       "year": 2026,
+       "price": 1950000.0,
+       "suburb_med": 1730000
+      }
+     ],
+     "houses_on_street": 71,
+     "units_on_street": 64,
+     "median_house_rent_week": 1150.0,
+     "sale_turnover": "Every 12.5 years",
+     "sale_turnover_years": 12.5,
+     "renters_pct": "41%",
+     "renters_pct_num": 41.0
+    },
+    "suburb_medians": {
+     "past_growth_pct": 3.9,
+     "annual_4y": 5.9,
+     "annual_8y": 5.2,
+     "sale_turnover_years": 11.8,
+     "rental_turnover_years": 2.4,
+     "renters_pct": 52.0
+    },
+    "forecast_rank": {
+     "rank": 14,
+     "total": 120,
+     "percentile_from_top": 12,
+     "band": "Top 15%",
+     "tercile": "upper third"
+    },
+    "gnaf_id": "GASYN000000002",
+    "suburb": "Surry Hills"
+   }
+  },
+  "/v1/properties/GASYN000000002/valuation/avm": {
+   "data": {
+    "predicted_price": 1880000,
+    "predicted_price_high": 2120000,
+    "predicted_price_low": 1640000,
+    "prediction_date": "2026-10-20"
+   }
+  },
+  "/v1/properties/GASYN000000002/valuation/agent-quoting": {
+   "data": {
+    "agency_name": "Example Property Co",
+    "asking_price": 1850000,
+    "cohort": "Accurate Quoter",
+    "likely_sale_price": 1890000,
+    "median_deviation_pct": 2.1,
+    "recent_sales": [
+     {
+      "address": "3 Sample Street, Surry Hills",
+      "diff_pct": 1.9,
+      "guide_price": 1600000,
+      "sold_date": "2026-08-30",
+      "sold_price": 1630000
+     }
+    ],
+    "total_sales": 12,
+    "underquote_rate_pct": 8.0
+   }
+  },
+  "/v1/properties/GASYN000000002/transport/nearby": {
+   "data": {
+    "center_lat": -33.8814,
+    "center_lng": 151.213,
+    "counts": {
+     "bus": 12,
+     "ferry": 0,
+     "train": 1,
+     "tram": 1
+    },
+    "nearest": {
+     "train": {
+      "distance_m": 820,
+      "label": "Train station",
+      "lat": -33.884,
+      "lng": 151.2066
+     },
+     "tram": {
+      "distance_m": 410,
+      "label": "Light rail stop",
+      "lat": -33.8852,
+      "lng": 151.212
+     },
+     "bus": {
+      "distance_m": 90,
+      "label": "Bus stop",
+      "lat": -33.881,
+      "lng": 151.2135
+     }
+    },
+    "gnaf_id": "GASYN000000002",
+    "radius_m": 1000
+   }
+  },
+  "/v1/suburbs/Surry Hills/risks/extras": {
+   "data": {
+    "area_name": "Surry Hills",
+    "area_level": "suburb",
+    "landslide_pct": 0.0,
+    "storm_tide_high_pct": 0.0,
+    "epa_notices_n": 2,
+    "insurance": {
+     "n": 40,
+     "comp_med": 2100.0,
+     "basic_med": 450.0,
+     "rent_med": 400.0
+    },
+    "crime_bench": {
+     "nat_med": 2787.56,
+     "sub_med": 4100.0
+    },
+    "per_mb": {
+     "insurance": [
+      {
+       "mb": "99000000011",
+       "score": 2200.0
+      }
+     ],
+     "risks": [
+      {
+       "mb": "99000000011",
+       "contam_pct": 0.0,
+       "mine_pct": 0.0,
+       "anef_med": null,
+       "acid_pct": 0.0
+      }
+     ]
+    }
+   }
+  },
+  "/v1/suburbs/Surry Hills/risks/property-hazard-counts": {
+   "data": {
+    "area_name": "Surry Hills",
+    "area_level": "suburb",
+    "total_properties": 9000,
+    "bushfire": {
+     "count": 0,
+     "pct": 0.0
+    },
+    "flood": {
+     "count": 610,
+     "pct": 6.78
+    },
+    "mine_subsidence": {
+     "count": 0,
+     "pct": 0.0
+    },
+    "contamination": {
+     "within_250m_count": 1500,
+     "within_250m_pct": 16.7,
+     "within_500m_count": 4100,
+     "within_500m_pct": 45.6,
+     "nearest_m": 3.0
+    },
+    "aircraft_noise": {},
+    "acid_sulfate": {
+     "any_high_count": 0,
+     "any_high_pct": 0.0,
+     "surface_high_count": 0,
+     "surface_high_pct": 0.0
+    }
+   }
+  }
+ }
+}

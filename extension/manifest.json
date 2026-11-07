@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "MB Red Flags (City of Sydney)",
+  "short_name": "MB Red Flags",
+  "description": "First-pass buyer's-agent red flags from Microburbs for the listing you are viewing. Decision support, not advice.",
+  "version": "0.1.0",
+  "permissions": ["storage", "activeTab"],
+  "host_permissions": [
+    "https://www.realestate.com.au/*",
+    "https://realestate.com.au/*",
+    "https://www.domain.com.au/*",
+    "https://domain.com.au/*",
+    "http://127.0.0.1:8787/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.realestate.com.au/*",
+        "https://realestate.com.au/*",
+        "https://www.domain.com.au/*",
+        "https://domain.com.au/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

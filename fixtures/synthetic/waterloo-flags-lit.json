@@ -1,0 +1,364 @@
+{
+ "_note": "SYNTHETIC FIXTURE. Hand-written to the shape of the Microburbs OpenAPI examples. Not API output; values are invented and say nothing about the real address.",
+ "slug": "waterloo-flags-lit",
+ "match_suburbs": [
+  "waterloo"
+ ],
+ "suburb_upper": "WATERLOO",
+ "routes": {
+  "/v1/geocode/address": {
+   "data": [
+    {
+     "abbr": "",
+     "display_name": "14 Raglan Street, Waterloo",
+     "id": "GASYN000000001",
+     "name": "14 Raglan Street, Waterloo",
+     "property_type": "house"
+    }
+   ]
+  },
+  "/v1/properties/GASYN000000001/profile": {
+   "data": {
+    "gccsa": "Greater Sydney",
+    "lga": "Sydney",
+    "mesh_block": "99000000001",
+    "postcode": "2017",
+    "sa1": "99000000101",
+    "sa2": "Waterloo",
+    "sa3": "Sydney Inner City",
+    "sa4": "Sydney - City and Inner South",
+    "state": "NSW",
+    "suburb": "Waterloo (NSW)"
+   }
+  },
+  "/v1/properties/GASYN000000001/risks/all": {
+   "data": {
+    "bushfire": [],
+    "flood": [
+     {
+      "area_level": "Layer",
+      "area_name": "Risk Layer",
+      "name": "Flood",
+      "nearest_distance_m": 0.0,
+      "on_property": true,
+      "search_radius_m": 1000,
+      "value": "On property",
+      "features_within_radius": 6
+     }
+    ],
+    "historical_flood": [
+     {
+      "area_level": "Layer",
+      "area_name": "Risk Layer",
+      "name": "Historically Flooded",
+      "nearest_distance_m": 64.0,
+      "on_property": false,
+      "search_radius_m": 1000,
+      "value": "Not on property; nearest 64 m away",
+      "features_within_radius": 2
+     }
+    ],
+    "heritage": [
+     {
+      "area_level": "Layer",
+      "area_name": "Risk Layer",
+      "name": "Heritage",
+      "nearest_distance_m": 38.0,
+      "on_property": false,
+      "search_radius_m": 1000,
+      "value": "Not on property; nearest 38 m away",
+      "features_within_radius": 11
+     }
+    ],
+    "public_housing": [
+     {
+      "area_level": "Layer",
+      "area_name": "Risk Layer",
+      "name": "Public Housing",
+      "nearest_distance_m": 0.0,
+      "on_property": true,
+      "search_radius_m": 1000,
+      "value": "24.0%",
+      "value_unit": "Properties Proportion"
+     },
+     {
+      "area_level": "Layer",
+      "area_name": "Risk Layer",
+      "name": "Public Housing",
+      "nearest_distance_m": 150.0,
+      "on_property": false,
+      "search_radius_m": 1000,
+      "value": "6.1%",
+      "value_unit": "Properties Proportion"
+     }
+    ],
+    "landslide": [],
+    "erosion": [
+     {
+      "area_level": "Layer",
+      "area_name": "Risk Layer",
+      "name": "Erosion",
+      "nearest_distance_m": 720.0,
+      "on_property": false,
+      "search_radius_m": 1000,
+      "value": "Not on property; nearest 720 m away",
+      "features_within_radius": 1
+     }
+    ],
+    "environment": [
+     {
+      "area_level": "Layer",
+      "area_name": "Risk Layer",
+      "name": "Environment",
+      "nearest_distance_m": 180.0,
+      "on_property": false,
+      "search_radius_m": 1000,
+      "value": "Not on property; nearest 180 m away",
+      "features_within_radius": 4
+     }
+    ],
+    "hv_power_line": [
+     {
+      "area_level": "Layer",
+      "area_name": "Risk Layer",
+      "name": "HV Power Line",
+      "nearest_distance_m": 140.0,
+      "on_property": false,
+      "search_radius_m": 1000,
+      "value": "Not on property; nearest 140 m away",
+      "features_within_radius": 1
+     }
+    ],
+    "mobile_black_spot": []
+   }
+  },
+  "/v1/properties/GASYN000000001/surroundings/public-housing": {
+   "data": {
+    "flagged": [
+     {
+      "address": "2 Synthetic Lane",
+      "gnaf_pid": "GASYN000000101",
+      "lat": -33.9003,
+      "lng": 151.2064,
+      "ph_chance": 0.92
+     },
+     {
+      "address": "4 Synthetic Lane",
+      "gnaf_pid": "GASYN000000102",
+      "lat": -33.90045,
+      "lng": 151.20655,
+      "ph_chance": 0.88
+     },
+     {
+      "address": "9 Example Row",
+      "gnaf_pid": "GASYN000000103",
+      "lat": -33.8999,
+      "lng": 151.2059,
+      "ph_chance": 0.81
+     }
+    ],
+    "flagged_count": 31,
+    "property_count": 142,
+    "gnaf_pid": "GASYN000000001",
+    "radius_m": 200
+   }
+  },
+  "/v1/properties/GASYN000000001/street/profile": {
+   "data": {
+    "address": "14 Raglan Street",
+    "street": "Raglan Street",
+    "streets_in_suburb": 96,
+    "profile": {
+     "street": "Raglan St",
+     "title": "Raglan Street",
+     "current_price": 1210000.0,
+     "n_sales": 38,
+     "target_2y": 1290000.0,
+     "annual_2y": 3.3,
+     "target_4y": 1365000.0,
+     "annual_4y": 3.1,
+     "target_8y": 1540000.0,
+     "annual_8y": 3.0,
+     "past_growth_pct": 1.9,
+     "confidence": "Medium",
+     "history": [
+      {
+       "year": 2024,
+       "price": 1150000.0,
+       "suburb_med": 1180000
+      },
+      {
+       "year": 2025,
+       "price": 1190000.0,
+       "suburb_med": 1230000
+      },
+      {
+       "year": 2026,
+       "price": 1210000.0,
+       "suburb_med": 1290000
+      }
+     ],
+     "houses_on_street": 44,
+     "units_on_street": 120,
+     "median_house_rent_week": 890.0,
+     "sale_turnover": "Every 11.0 years",
+     "sale_turnover_years": 11.0,
+     "renters_pct": "58%",
+     "renters_pct_num": 58.0
+    },
+    "suburb_medians": {
+     "past_growth_pct": 3.6,
+     "annual_4y": 5.4,
+     "annual_8y": 4.9,
+     "sale_turnover_years": 10.2,
+     "rental_turnover_years": 2.1,
+     "renters_pct": 61.0
+    },
+    "forecast_rank": {
+     "rank": 81,
+     "total": 96,
+     "percentile_from_top": 84,
+     "band": "Bottom 20%",
+     "tercile": "lower third"
+    },
+    "gnaf_id": "GASYN000000001",
+    "suburb": "Waterloo"
+   }
+  },
+  "/v1/properties/GASYN000000001/valuation/avm": {
+   "data": {
+    "predicted_price": 1180000,
+    "predicted_price_high": 1350000,
+    "predicted_price_low": 1010000,
+    "prediction_date": "2026-10-20"
+   }
+  },
+  "/v1/properties/GASYN000000001/valuation/agent-quoting": {
+   "data": {
+    "agency_name": "Synthetic Realty Inner South",
+    "asking_price": 1050000,
+    "cohort": "Severe Underquoter",
+    "likely_sale_price": 1199000,
+    "median_deviation_pct": 14.2,
+    "recent_sales": [
+     {
+      "address": "1 Example Street, Waterloo",
+      "diff_pct": 15.8,
+      "guide_price": 950000,
+      "sold_date": "2026-09-12",
+      "sold_price": 1100000
+     }
+    ],
+    "total_sales": 9,
+    "underquote_rate_pct": 67.0
+   }
+  },
+  "/v1/properties/GASYN000000001/transport/nearby": {
+   "data": {
+    "center_lat": -33.9001,
+    "center_lng": 151.2062,
+    "counts": {
+     "bus": 9,
+     "ferry": 0,
+     "train": 1,
+     "tram": 0
+    },
+    "nearest": {
+     "train": {
+      "distance_m": 480,
+      "label": "Metro station",
+      "lat": -33.8975,
+      "lng": 151.2049
+     },
+     "bus": {
+      "distance_m": 70,
+      "label": "Bus stop",
+      "lat": -33.9005,
+      "lng": 151.2061
+     }
+    },
+    "gnaf_id": "GASYN000000001",
+    "radius_m": 1000
+   }
+  },
+  "/v1/suburbs/Waterloo (NSW)/risks/extras": {
+   "data": {
+    "area_name": "Waterloo",
+    "area_level": "suburb",
+    "landslide_pct": 0.0,
+    "storm_tide_high_pct": 0.0,
+    "epa_notices_n": 2,
+    "insurance": {
+     "n": 40,
+     "comp_med": 2100.0,
+     "basic_med": 450.0,
+     "rent_med": 400.0
+    },
+    "crime_bench": {
+     "nat_med": 2787.56,
+     "sub_med": 4100.0
+    },
+    "per_mb": {
+     "insurance": [
+      {
+       "mb": "99000000001",
+       "score": 2200.0
+      }
+     ],
+     "risks": [
+      {
+       "mb": "99000000001",
+       "contam_pct": 100.0,
+       "mine_pct": 0.0,
+       "anef_med": 21.0,
+       "acid_pct": 0.0
+      },
+      {
+       "mb": "99000000002",
+       "contam_pct": 40.0,
+       "mine_pct": 0.0,
+       "anef_med": null,
+       "acid_pct": 0.0
+      }
+     ]
+    }
+   }
+  },
+  "/v1/suburbs/Waterloo (NSW)/risks/property-hazard-counts": {
+   "data": {
+    "area_name": "Waterloo",
+    "area_level": "suburb",
+    "total_properties": 9000,
+    "bushfire": {
+     "count": 0,
+     "pct": 0.0
+    },
+    "flood": {
+     "count": 610,
+     "pct": 6.78
+    },
+    "mine_subsidence": {
+     "count": 0,
+     "pct": 0.0
+    },
+    "contamination": {
+     "within_250m_count": 1500,
+     "within_250m_pct": 16.7,
+     "within_500m_count": 4100,
+     "within_500m_pct": 45.6,
+     "nearest_m": 3.0
+    },
+    "aircraft_noise": {
+     "count": 900,
+     "pct": 10.0
+    },
+    "acid_sulfate": {
+     "any_high_count": 0,
+     "any_high_pct": 0.0,
+     "surface_high_count": 0,
+     "surface_high_pct": 0.0
+    }
+   }
+  }
+ }
+}

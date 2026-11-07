@@ -1,0 +1,21 @@
+{
+  "name": "mb-redflags",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Chrome extension: Microburbs red flags for the listing you are viewing (City of Sydney). Decision support, not advice.",
+  "type": "module",
+  "scripts": {
+    "build": "node -e \"require('fs').rmSync('extension/dist',{recursive:true,force:true})\" && tsup && node scripts/copy-assets.mjs",
+    "proxy": "node proxy/server.mjs",
+    "proxy:mock": "MOCK=1 node proxy/server.mjs",
+    "dev": "node scripts/dev.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "holdout": "node scripts/holdout.mjs"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@types/chrome": "^0.1.30",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3"
+  }
+}

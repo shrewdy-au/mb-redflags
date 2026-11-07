@@ -1,0 +1,10 @@
+.env
+*.env
+!.env.example
+/out
+out/
+fixtures/real
+*.csv
+dist
+node_modules
+.DS_Store

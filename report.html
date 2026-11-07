@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MB Red Flags report</title>
+<style>
+:root { --bg:#fffdf9; --fg:#1b1b1b; --mute:#666; --line:#e3ddd3; --red:#b3261e; --amber:#b7791f; --green:#2f7d4f; }
+body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; }
+main { max-width:860px; margin:0 auto; padding:32px 16px 64px; }
+h1 { font-size:30px; margin:0 0 4px; } h2 { margin-top:36px; border-top:1px solid var(--line); padding-top:20px; }
+.sub { color:var(--mute); } table { width:100%; border-collapse:collapse; font-size:14px; } th,td { text-align:left; border-bottom:1px solid var(--line); padding:6px 8px; vertical-align:top; }
+.todo { background:#fff3cd; padding:2px 6px; border-radius:4px; } code { background:#f5f1ea; padding:0 4px; border-radius:4px; }
+.wrap { overflow-x:auto; }
+</style>
+</head>
+<body><main>
+<h1>MB Red Flags</h1>
+<p class="sub">A GO / INVESTIGATE / NO-GO panel for City of Sydney listings, built on the Microburbs API. Microburbs hackathon, 7 Nov 2026. Team MOGL (Jake Milne).</p>
+
+<h2>1. Data</h2>
+<ul>
+  <li>Microburbs API, City of Sydney LGA: <code>geocode/address</code>, <code>properties/{gnaf}/profile</code>, <code>risks/all</code>, <code>surroundings/public-housing</code>, <code>street/profile</code>, <code>valuation/avm</code>, <code>valuation/agent-quoting</code>, <code>transport/nearby</code>, <code>suburbs/{SAL}/risks/extras</code>, <code>suburbs/{SAL}/risks/property-hazard-counts</code>.</li>
+  <li>From the listing page: the address only. The asking price is typed in by the user.</li>
+  <li>Held-out check: the supplied public-housing CSV and the supplied address list, used on the day only and not republished.</li>
+</ul>
+
+<h2>2. Method</h2>
+<ol>
+  <li>Resolve the address to a G-NAF id. Choose the geocode candidate whose <code>abbr</code> matches the street number and street name. For units, try <code>3/12 Smith St</code> first, then <code>Unit 3 12 Smith St</code>.</li>
+  <li>Make 8 tier-1 calls with <code>Promise.allSettled</code>, at most 4 at a time.</li>
+  <li><strong>Mesh-block ANEF join:</strong> <code>profile.mesh_block</code> → <code>risks/extras.per_mb.risks[].anef_med</code>. Labelled "microburb estimate, not a property contour". Falls back to the suburb share.</li>
+  <li><strong>On-property vs distance:</strong> each hazard gets its own buffer. Public housing is measured twice, as the area share and as the 200 m share, and the row goes red if the subject address itself is flagged.</li>
+  <li><strong>Street forecast rank</strong>, compared with the suburb median. Thin evidence is greyed out, not rated.</li>
+  <li>Any RED → NO-GO, any AMBER → INVESTIGATE, otherwise GO. The wording is neutral: decision support, not advice.</li>
+</ol>
+
+<h2>3. What buyers already see on REA / Domain</h2>
+<p><span class="todo">TODO: one paragraph.</span> Price guide, photos, floor plan, suburb median and demographics, school catchments. Hazard overlays, public-housing share, aircraft noise and agent quoting behaviour are mostly not shown.</p>
+
+<h2>4. Competitors</h2>
+<div class="wrap"><table>
+<tr><th>Product</th><th>What it does</th><th>Gap we fill</th></tr>
+<tr><td>Homer</td><td>~10k users; campaign history for listings <span class="todo">confirm</span></td><td>No hazard, public-housing or ANEF verdict</td></tr>
+<tr><td>Property Mate</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
+<tr><td>Properly</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
+<tr><td>Casa Intelligence</td><td>Hazards and a development score, SEQ only</td><td>Sydney coverage; single go / no-go</td></tr>
+<tr><td>Sydney Apartment Buyers Overlay</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
+<tr><td>Australia Estate Flight Paths</td><td>Flight-path overlay <span class="todo">confirm</span></td><td>Mesh-block ANEF combined with every other flag</td></tr>
+</table></div>
+
+<h2>5. Our added value</h2>
+<p><span class="todo">TODO.</span> One verdict, on the listing page, before the buyer pays for reports. Every row says the level its fact applies at, so a suburb fact is never presented as a property fact.</p>
+
+<h2>6. Why these facts</h2>
+<p><span class="todo">TODO.</span> These are the first-pass questions a buyer's agent asks before booking an inspection: will it flood, burn or slip? What is next door? Will the street keep pace with the suburb? Is the guide honest?</p>
+
+<h2>7. Held-out check</h2>
+<p>The public-housing classifier (the subject G-NAF appears in the <code>surroundings/public-housing</code> flagged list) is tested against the supplied public-housing CSV: N sampled positives plus 20 control addresses. Only aggregate precision and recall are reported (<code>scripts/holdout.mjs</code> → <code>out/holdout.json</code>).</p>
+<table><tr><th>n positive</th><th>n control</th><th>TP</th><th>FP</th><th>FN</th><th>TN</th><th>unresolved</th><th>precision</th><th>recall</th></tr>
+<tr><td colspan="9"><span class="todo">placeholder: fill from out/holdout.json</span></td></tr></table>
+
+<h2>8. What worked / what didn't</h2>
+<ul><li><span class="todo">TODO</span></li></ul>
+
+<p class="sub">Data: Microburbs. Incorporates or developed using G-NAF © Geoscape Australia licensed by the Commonwealth of Australia under the Open G-NAF End User Licence Agreement. Decision support, not financial or legal advice.</p>
+</main></body></html>
