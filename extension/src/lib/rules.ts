@@ -192,12 +192,13 @@ function streetRow(b: Bundle): Row {
 
 function avmRow(b: Bundle): Row {
   const ep = '/v1/properties/{gnaf}/valuation/avm';
-  const label = 'Asking vs AVM';
+  const label = 'Microburbs valuation (AVM)';
   if (!b.avm?.ok) return noData('avm', label, b.avm, ep, 'property');
   const a = b.avm.data || {};
   const p = num(a.predicted_price);
   const range = `${fmt$(a.predicted_price_low)}–${fmt$(a.predicted_price_high)}`;
-  if (!b.asking || !p) return { id: 'avm', label, status: 'GREY', summary: `AVM ${fmt$(p)} (80% ${range}) — type the asking price to compare`, endpoint: ep, level: 'property' };
+  if (!b.asking || !p) return { id: 'avm', label, status: 'INFO', summary: `${fmt$(p)} (80% range ${range})`, endpoint: ep, level: 'property',
+    detail: `Automated valuation dated ${a.prediction_date || '?'}. Indicative only.` };
   const ratio = b.asking / p;
   const status: Status = ratio > 1.1 ? 'RED' : ratio >= 1.03 ? 'AMBER' : 'GREEN';
   return { id: 'avm', label, status, summary: `asking ${fmt$(b.asking)} is ${((ratio - 1) * 100).toFixed(1)}% vs AVM ${fmt$(p)}`, endpoint: ep, level: 'property',

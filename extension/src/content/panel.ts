@@ -299,13 +299,8 @@ export class Panel {
     inp.setAttribute('aria-label', 'Address');
     f1.append(inp, h('button', '', 'Check'));
     f1.onsubmit = (e) => { e.preventDefault(); if (inp.value.trim()) this.handlers.onManual(inp.value.trim()); };
-    const f2 = h('form', 'form') as HTMLFormElement;
-    const ask = h('input') as HTMLInputElement; ask.placeholder = 'Asking price quoted · $'; ask.inputMode = 'numeric';
-    ask.setAttribute('aria-label', 'Asking price');
-    if (asking) ask.value = String(asking);
-    f2.append(ask, h('button', '', 'Compare'));
-    f2.onsubmit = (e) => { e.preventDefault(); const n = Number(ask.value.replace(/[^\d.]/g, '')); this.handlers.onAsking(n > 0 ? n : null); };
-    return [f2, f1];
+    void asking; // price compare removed (Jake, 7 Nov 2026): the AVM row shows the valuation on its own
+    return [f1];
   }
 
   private rowEl(r: Row) {
