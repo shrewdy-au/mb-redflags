@@ -52,7 +52,7 @@ async function analyse(tabId: number, a: AddressInfo) {
   if (!out) return; // superseded by a newer address
   st.bundle = out.bundle;
   // Seed the drawer cache with suburb layers the analysis already fetched, so opening their maps costs nothing.
-  if (out.report.sal) {
+  if (out.report.sal && out.bundle) {
     const S = `/v1/suburbs/${encodeURIComponent(out.report.sal)}`;
     const b = out.bundle;
     const seed: Array<[string, any]> = [[`${S}/development/zoning-map`, b.zoning], [`${S}/development/building-controls`, b.controls],
