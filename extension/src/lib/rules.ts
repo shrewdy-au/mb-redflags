@@ -170,7 +170,19 @@ function streetRow(b: Bundle): Row {
   else if (/upper/i.test(tercile) && s4 !== null && sub4 !== null && s4 > sub4 && confOk) status = 'GREEN';
   else status = 'INFO'; // middle third, or upper third without the supporting evidence: neutral
   const summary = `${p.title || d.street || 'street'}: rank ${rank.rank ?? '?'}/${rank.total ?? d.streets_in_suburb ?? '?'} (${tercile || 'n/a'}), 4-yr ${s4 ?? '?'}%/yr vs suburb ${sub4 ?? '?'}%/yr`;
-  return { id: 'street', label, status, summary, endpoint: ep, level: 'street',
+  // Sparkline: history 2024-2026 (street + suburb median), then the 2-yr / 4-yr targets at 2028 / 2030 (dashed).
+  const hist: any[] = Array.isArray(p.history) ? p.history.filter((x: any) => num(x?.year) !== null && x.year >= 2024 && x.year <= 2026) : [];
+  const streetPts: Array<[number, number]> = hist.filter((x) => num(x.price) !== null).map((x) => [x.year, num(x.price)!]);
+  const subPts: Array<[number, number]> = hist.filter((x) => num(x.suburb_med) !== null).map((x) => [x.year, num(x.suburb_med)!]);
+  const cur = num(p.current_price);
+  if (cur !== null && !streetPts.some((q) => q[0] === 2026)) streetPts.push([2026, cur]);
+  const t2 = num(p.target_2y), t4 = num(p.target_4y);
+  if (t2 !== null) streetPts.push([2028, t2]);
+  if (t4 !== null) streetPts.push([2030, t4]);
+  const lastSub = subPts[subPts.length - 1];
+  if (lastSub && sub4 !== null) subPts.push([2030, lastSub[1] * Math.pow(1 + sub4 / 100, 2030 - lastSub[0])]);
+  const chart = streetPts.length >= 2 ? { street: streetPts, suburb: subPts, lastYear: 2026 } : undefined;
+  return { id: 'street', label, status, summary, endpoint: ep, level: 'street', chart,
     detail: `confidence ${conf || '?'}, ${n} sales${status === 'GREY' ? ' — too thin or low confidence to rate' : status === 'INFO' ? ' — middle of the pack, not rated' : ''}. Forecast, not a guarantee.` };
 }
 

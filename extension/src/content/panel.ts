@@ -4,6 +4,8 @@
 import type { MapPayload, MapSet, Report, Row, Status } from '../lib/types';
 import { hasMap } from '../lib/mapids';
 import { MAP_DRAWER } from '../lib/config';
+import { icon } from './icons';
+import { RULES, CAVEATS } from '../lib/notes';
 
 const SERIF = `'MBRF Fraunces', Georgia, 'Times New Roman', serif`;
 const MONO = `'MBRF Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`;
@@ -20,12 +22,12 @@ const CSS = `
 .wrap { position: fixed; top: 72px; right: 12px; width: ${PANEL_W}px; max-height: calc(100vh - 96px); z-index: 2147483646;
   font: 300 13px/1.45 ${SERIF}; color: #e7e5df; background: #161616; border: 1px solid #2c2c2c; border-radius: 4px;
   box-shadow: 0 18px 50px rgba(0,0,0,.45); display: flex; flex-direction: column; overflow: hidden; isolation: isolate; }
-.wrap::before { content: ''; position: absolute; inset: 0; background-image: ${GRAIN}; opacity: .07; pointer-events: none; z-index: 0; mix-blend-mode: screen; }
+.wrap::before { content: ''; position: absolute; inset: 0; background-image: ${GRAIN}; opacity: .045; pointer-events: none; z-index: 0; mix-blend-mode: screen; }
 .wrap > * { position: relative; z-index: 1; }
 .wrap.min { width: auto; }
 .wrap.min .body { display: none; }
 .mono { font-family: ${MONO}; }
-.top { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid #2a2a2a; }
+.top { display: flex; align-items: center; gap: 10px; padding: 10px 16px; }
 .lock { font: 400 10px/1 ${MONO}; letter-spacing: .14em; text-transform: uppercase; color: #9a9a96; white-space: nowrap; }
 .lock b { color: #e7e5df; font-weight: 500; }
 .mock { font: 500 9px/1 ${MONO}; letter-spacing: .12em; color: #161616; background: #e7e5df; padding: 3px 5px; }
@@ -34,9 +36,9 @@ button { font: 400 11px/1 ${MONO}; letter-spacing: .08em; text-transform: upperc
   border: 1px solid #3a3a3a; border-radius: 2px; padding: 6px 9px; }
 button:hover { border-color: #e7e5df; }
 button:focus-visible, input:focus-visible, summary:focus-visible { outline: 1px solid #ff3131; outline-offset: 2px; }
-.body { overflow: auto; padding: 14px 14px 14px; scrollbar-width: thin; scrollbar-color: #3a3a3a transparent; }
+.body { overflow: auto; padding: 8px 16px 16px; scrollbar-width: thin; scrollbar-color: #3a3a3a transparent; }
 .kicker { font: 400 10px/1 ${MONO}; letter-spacing: .16em; text-transform: uppercase; color: #8a8a86; }
-.head { position: relative; padding: 6px 0 12px; border-bottom: 1px solid #2a2a2a; margin-bottom: 10px; }
+.head { position: relative; padding: 6px 0 12px; margin-bottom: 6px; }
 .verdict { position: relative; display: inline-block; margin: 8px 0 4px; padding: 2px 10px 0 6px; font: 600 40px/1.05 ${SERIF}; letter-spacing: -.01em; }
 .verdict.GO { color: #8fae86; } .verdict.INVESTIGATE { color: #e0a33a; } .verdict.NO-GO { color: #ff3131; } .verdict.NONE { color: #e7e5df; font-weight: 300; font-size: 30px; }
 .verdict svg { position: absolute; left: -20px; top: -12px; width: calc(100% + 38px); height: calc(100% + 22px); overflow: visible; pointer-events: none; }
@@ -51,29 +53,31 @@ button:focus-visible, input:focus-visible, summary:focus-visible { outline: 1px 
   border-radius: 0; padding: 8px 4px; }
 .form input::placeholder { color: #6f6f6b; }
 .form input:focus { border-bottom-color: #e7e5df; outline: none; }
-.rows { margin-top: 10px; border-top: 1px solid #2a2a2a; }
-.row { border-bottom: 1px solid #242424; }
-.row summary { list-style: none; display: flex; gap: 10px; align-items: flex-start; padding: 9px 2px; cursor: pointer; }
-.row summary::-webkit-details-marker { display: none; }
-.row.map summary:hover, .row.active summary { background: rgba(231,229,223,.035); }
-.row.active { box-shadow: inset 2px 0 0 #e7e5df; }
-.dot { width: 7px; height: 7px; margin-top: 6px; flex: none; border-radius: 50%; }
-.dot.RED { background: #ff3131; } .dot.AMBER { background: #e0a33a; } .dot.GREEN { background: #8fae86; } .dot.GREY { background: transparent; border: 1px solid #6b6b6b; } .dot.INFO { background: #8a8a86; }
+.rows { margin-top: 14px; }
+.row { position: relative; }
+.rl { display: flex; gap: 10px; align-items: center; padding: 8px 2px; border-radius: 2px; }
+.row.map .rl { cursor: pointer; }
+.row.map .rl:hover, .row.active .rl { background: rgba(231,229,223,.04); }
+.dot { width: 6px; height: 6px; flex: none; border-radius: 50%; }
+.dot.RED { background: #ff3131; } .dot.AMBER { background: #e0a33a; } .dot.GREEN { background: #8fae86; } .dot.GREY { background: transparent; box-shadow: inset 0 0 0 1px #6b6b6b; } .dot.INFO { background: #6f6f6b; }
+.ico { width: 20px; height: 20px; flex: none; fill: none; stroke: #c9c7c1; stroke-width: 1.25; stroke-linecap: round; stroke-linejoin: round; }
 .txt { flex: 1; min-width: 0; }
-.lab { position: relative; display: inline-block; font: 400 14px/1.3 ${SERIF}; color: #f2f0ea; }
-.lab svg { position: absolute; left: -2px; bottom: -6px; width: calc(100% + 6px); height: 9px; overflow: visible; }
-.sum { font: 400 11.5px/1.45 ${MONO}; color: #b9b7b1; margin-top: 3px; }
-.lvl { font: 400 9.5px/1.3 ${MONO}; letter-spacing: .12em; text-transform: uppercase; color: #77776f; margin-top: 3px; }
-.maptag { flex: none; display: inline-flex; align-items: center; gap: 5px; font: 400 9.5px/1 ${MONO}; letter-spacing: .14em; color: #8a8a86; border: 1px solid #333; padding: 4px 5px; margin-top: 2px; }
-.maptag::before { content: ''; width: 8px; height: 8px; border: 1px solid currentColor; box-sizing: border-box; }
-.row.active .maptag::before { background: #161616; box-shadow: inset 0 0 0 1.5px #e7e5df; }
-.row.active .maptag { color: #161616; background: #e7e5df; border-color: #e7e5df; }
-.more { padding: 0 2px 10px 19px; font: 400 11px/1.5 ${MONO}; color: #a3a19b; }
-.more div { margin-top: 3px; }
-.more code { font: inherit; color: #d6d4ce; border-bottom: 1px dotted #555; }
+.lab { position: relative; display: inline-block; font: 400 11.5px/1.3 ${MONO}; letter-spacing: .02em; color: #d9d7d1; }
+.lab svg { position: absolute; left: -2px; bottom: -5px; width: calc(100% + 6px); height: 8px; overflow: visible; }
+.sum { font: 400 11px/1.4 ${MONO}; color: #8f8d87; margin-top: 2px; }
+.chart { display: block; margin: 4px 0 2px; width: 100%; height: 74px; }
+.chart text { font: 400 8.5px ${MONO}; fill: #8a8a86; }
+.ib { flex: none; width: 22px; height: 22px; padding: 0; border: 0; display: grid; place-items: center; background: transparent; color: #8a8a86; }
+.ib .ico { width: 16px; height: 16px; stroke: currentColor; }
+.ib:hover, .ib[aria-expanded="true"], .row.active .mapb { color: #f2f0ea; }
+.row.active .mapb .ico { stroke-width: 1.8; }
+.note { display: none; margin: 0 0 8px 38px; padding: 8px 10px; background: #1e1e1e; border-left: 1px solid #3a3a3a; font: 400 10.5px/1.55 ${MONO}; color: #a3a19b; }
+.note.open { display: block; }
+.note div + div { margin-top: 3px; }
+.note code { font: inherit; color: #d6d4ce; word-break: break-all; }
 .verify { color: #e0a33a; }
 .msg { font: 400 11.5px/1.5 ${MONO}; padding: 8px 0; color: #c9c7c1; }
-.foot { font: 400 10px/1.5 ${MONO}; color: #77776f; margin-top: 14px; padding-top: 10px; border-top: 1px solid #2a2a2a; }
+.foot { font: 400 9.5px/1.5 ${MONO}; color: #6b6b67; margin-top: 18px; }
 
 /* Map drawer: slides out from the panel's left edge. */
 .drawer { position: fixed; top: 72px; right: ${12 + PANEL_W - 1}px; width: ${DRAWER_W}px; max-width: calc(100vw - ${PANEL_W + 36}px); height: 520px;
@@ -110,6 +114,33 @@ function handMark(kind: 'circle' | 'underline'): SVGSVGElement {
   p.setAttribute('pathLength', '1');
   p.setAttribute('vector-effect', 'non-scaling-stroke');
   svg.appendChild(p);
+  return svg;
+}
+
+/** Street forecast sparkline: history solid, forecast dashed, suburb median dotted beside it. */
+function streetChart(c: NonNullable<Row['chart']>): SVGSVGElement {
+  const svg = document.createElementNS(SVGNS, 'svg') as SVGSVGElement;
+  svg.setAttribute('viewBox', '0 0 300 74'); svg.setAttribute('class', 'chart'); svg.setAttribute('role', 'img');
+  svg.setAttribute('aria-label', 'Street price history and forecast to 2030');
+  const all = [...c.street, ...c.suburb].map((p) => p[1]).filter((v) => isFinite(v));
+  if (!all.length) return svg;
+  const y0 = Math.min(...all), y1 = Math.max(...all);
+  const X = (yr: number) => 44 + ((yr - 2024) / 6) * 246, Y = (v: number) => 58 - ((v - y0) / (y1 - y0 || 1)) * 48;
+  const path = (pts: Array<[number, number]>, stroke: string, dash = '') => {
+    if (pts.length < 2) return;
+    const p = document.createElementNS(SVGNS, 'path');
+    p.setAttribute('d', pts.map(([x, v], i) => `${i ? 'L' : 'M'}${X(x).toFixed(1)} ${Y(v).toFixed(1)}`).join(' '));
+    p.setAttribute('fill', 'none'); p.setAttribute('stroke', stroke); p.setAttribute('stroke-width', '1.25'); if (dash) p.setAttribute('stroke-dasharray', dash);
+    svg.appendChild(p);
+  };
+  const t = (x: number, y: number, s: string, anchor = 'middle') => { const e = document.createElementNS(SVGNS, 'text'); e.setAttribute('x', String(x)); e.setAttribute('y', String(y)); e.setAttribute('text-anchor', anchor); e.textContent = s; svg.appendChild(e); };
+  path(c.suburb, '#6b6b67', '1 3');
+  path(c.street.filter((p) => p[0] <= c.lastYear), '#e7e5df');
+  path(c.street.filter((p) => p[0] >= c.lastYear), '#e7e5df', '4 3');
+  const last = c.street[c.street.length - 1];
+  if (last) t(X(last[0]), Y(last[1]) - 5, `$${(last[1] / 1e6).toFixed(2)}m`, 'end');
+  for (const yr of [2024, 2026, 2028, 2030]) t(X(yr), 71, String(yr));
+  t(0, Y(y1) + 3, `$${(y1 / 1e6).toFixed(1)}m`, 'start'); t(0, Y(y0) + 3, `$${(y0 / 1e6).toFixed(1)}m`, 'start');
   return svg;
 }
 
@@ -257,7 +288,7 @@ export class Panel {
     this.body.querySelectorAll('.row').forEach((el) => {
       const on = this.selected.includes((el as HTMLElement).dataset.id || '');
       el.classList.toggle('active', on);
-      const tag = el.querySelector('.maptag'); if (tag) { tag.setAttribute('aria-checked', String(on)); }
+      const tag = el.querySelector('.mapb'); if (tag) { tag.setAttribute('aria-checked', String(on)); }
     });
   }
 
@@ -279,31 +310,37 @@ export class Panel {
 
   private rowEl(r: Row) {
     const mapped = MAP_DRAWER && !!this.handlers.onMap && hasMap(r.id);
-    const d = h('details', `row${mapped ? ' map' : ''}`);
+    const d = h('div', `row${mapped ? ' map' : ''}`);
     d.dataset.id = r.id;
-    const s = h('summary');
+    const line = h('div', 'rl');
     const txt = h('div', 'txt');
     const lab = h('span', 'lab', r.label);
     if (r.status === 'RED') lab.append(handMark('underline'));
+    txt.append(lab, h('div', 'sum', r.summary));
+    if (r.chart) txt.append(streetChart(r.chart));
+    line.append(h('span', `dot ${r.status}`), icon(r.id), txt);
+    if (mapped) {
+      const m = h('button', 'ib mapb') as HTMLButtonElement;
+      m.title = 'Add to the map (tick several to stack them)'; m.setAttribute('role', 'checkbox'); m.setAttribute('aria-checked', 'false');
+      m.setAttribute('aria-label', `Map ${r.label}`);
+      m.append(icon('map'));
+      line.append(m);
+      line.addEventListener('click', () => this.toggle(r.id));
+    }
+    const ib = h('button', 'ib') as HTMLButtonElement;
+    ib.title = 'Source and notes'; ib.setAttribute('aria-label', `Notes for ${r.label}`); ib.setAttribute('aria-expanded', 'false');
+    ib.append(icon('info'));
+    line.append(ib);
+    const note = h('div', 'note');
     const dist = r.distance_m !== undefined && r.distance_m !== null ? ` · ${Math.round(r.distance_m)} m` : '';
-    txt.append(lab, h('div', 'sum', r.summary), h('div', 'lvl', `${r.level}${dist}`));
-    s.append(h('span', `dot ${r.status}`), txt);
-    if (mapped) {
-      const t = h('span', 'maptag', 'MAP'); t.title = 'Add this layer to the map (tick several to stack them)';
-      t.setAttribute('role', 'checkbox'); t.setAttribute('aria-checked', 'false');
-      s.append(t);
-    }
-    const more = h('div', 'more');
-    const ep = h('div'); ep.append('Endpoint ', h('code', '', r.endpoint)); more.append(ep);
-    more.append(h('div', '', `Level ${r.level}${dist}`));
-    if (r.detail) more.append(h('div', '', r.detail));
-    if (r.verify) more.append(h('div', 'verify', 'Verify on the s10.7 planning certificate before relying on this.'));
-    d.append(s, more);
-    if (mapped) {
-      s.addEventListener('click', () => {
-        this.toggle(r.id);
-      });
-    }
+    const ep = h('div'); ep.append(h('code', '', r.endpoint)); note.append(ep);
+    note.append(h('div', '', `Level: ${r.level}${dist}`));
+    if (r.detail) note.append(h('div', '', r.detail));
+    if (RULES[r.id]) note.append(h('div', '', `Rule: ${RULES[r.id]}`));
+    if (CAVEATS[r.id]) note.append(h('div', '', CAVEATS[r.id]));
+    if (r.verify) note.append(h('div', 'verify', 'Verify on the s10.7 planning certificate before relying on this.'));
+    ib.addEventListener('click', (e) => { e.stopPropagation(); const o = note.classList.toggle('open'); ib.setAttribute('aria-expanded', String(o)); });
+    d.append(line, note);
     return d;
   }
 
@@ -319,7 +356,7 @@ export class Panel {
     const label = r.state === 'done' ? r.verdict || '' : r.state === 'loading' ? 'Checking…' : r.state === 'outside' ? 'Outside coverage' : r.state === 'not_found' ? 'Address not matched' : r.state === 'error' ? 'Error' : 'Ready';
     const word = h('div', `verdict ${v}`, label);
     if (v !== 'NONE') word.append(handMark('circle'));
-    head.append(h('div', 'kicker', r.state === 'done' ? 'Verdict · first pass' : 'Red flags'), word,
+    head.append(word,
       h('div', 'vline', r.state === 'done' ? r.verdictLine || '' : r.message || (r.state === 'idle' ? 'Type an address below.' : '')));
     this.body.append(head);
     if (r.address) {

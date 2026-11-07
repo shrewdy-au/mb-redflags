@@ -11,6 +11,7 @@ export interface Row {
   distance_m?: number | null;
   detail?: string;
   verify?: boolean; // show 'verify on s10.7' note
+  chart?: { street: Array<[number, number]>; suburb: Array<[number, number]>; lastYear: number }; // street forecast sparkline
 }
 
 export type Verdict = 'GO' | 'INVESTIGATE' | 'NO-GO';

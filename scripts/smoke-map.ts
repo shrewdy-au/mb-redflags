@@ -14,6 +14,7 @@ const r = out!.report;
 if (!out?.bundle || !r.sal) { console.log('no bundle', r.state, r.message); process.exit(1); }
 const cache = new Map<string, Promise<MbResult>>();
 mkdirSync('out/maps', { recursive: true });
+writeFileSync('out/maps/_report.json', JSON.stringify(r));
 let calls = 0;
 for (const id of MAP_ROW_IDS) {
   const before = cache.size;
