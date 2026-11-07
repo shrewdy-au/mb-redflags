@@ -5,7 +5,7 @@
 ## What we built
 | Task | Deliverable | Where |
 |---|---|---|
-| Task 1 | Reel: **"Waterloo: 749 public homes out, 3,000 in"** (43.5 s, Hand & Machine documentary cut: 9News footage, two real soundbites, the recreated ABC page, five Microburbs map shots), with a pitch video (44.6 s) | [`/demo.mp4`](demo.mp4), [`/pitch.mp4`](pitch.mp4) |
+| Task 1 | Reel: **"Waterloo: 749 public homes out, 3,000 in"** (43.8 s, Hand & Machine documentary cut: 9News footage, two real soundbites, five Microburbs map shots, closes on a question and the Microburbs line), with a pitch video (44.6 s) | [`/demo.mp4`](demo.mp4), [`/pitch.mp4`](pitch.mp4) |
 | Task 1 | Second post: **"Zetland: Same developer, two councils"** (43.4 s, Hand & Machine cut: 9News footage of Harry Triguboff, his own soundbite, six Microburbs map shots) | [`/task1a/demo.mp4`](task1a/demo.mp4) |
 | Task 3 | **MB Red Flags**: a GO / INVESTIGATE / NO-GO side panel for City of Sydney listings on realestate.com.au and domain.com.au | [`/extension`](extension), [`/proxy`](proxy) |
 
