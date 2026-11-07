@@ -55,10 +55,10 @@ button:focus-visible, input:focus-visible, summary:focus-visible { outline: 1px 
 .form input:focus { border-bottom-color: #e7e5df; outline: none; }
 .rows { margin-top: 14px; }
 .row { position: relative; }
-.rl { display: flex; gap: 10px; align-items: center; padding: 8px 2px; border-radius: 2px; }
+.rl { display: flex; gap: 10px; align-items: flex-start; padding: 8px 2px; border-radius: 2px; }
 .row.map .rl { cursor: pointer; }
 .row.map .rl:hover, .row.active .rl { background: rgba(231,229,223,.04); }
-.dot { width: 6px; height: 6px; flex: none; border-radius: 50%; }
+.dot { width: 6px; height: 6px; flex: none; border-radius: 50%; margin-top: 6px; }
 .dot.RED { background: #ff3131; } .dot.AMBER { background: #e0a33a; } .dot.GREEN { background: #8fae86; } .dot.GREY { background: transparent; box-shadow: inset 0 0 0 1px #6b6b6b; } .dot.INFO { background: #6f6f6b; }
 .ico { width: 20px; height: 20px; flex: none; fill: none; stroke: #c9c7c1; stroke-width: 1.25; stroke-linecap: round; stroke-linejoin: round; }
 .txt { flex: 1; min-width: 0; }
@@ -67,7 +67,7 @@ button:focus-visible, input:focus-visible, summary:focus-visible { outline: 1px 
 .sum { font: 400 11px/1.4 ${MONO}; color: #8f8d87; margin-top: 2px; }
 .chart { display: block; margin: 4px 0 2px; width: 100%; height: 74px; }
 .chart text { font: 400 8.5px ${MONO}; fill: #8a8a86; }
-.ib { flex: none; width: 22px; height: 22px; padding: 0; border: 0; display: grid; place-items: center; background: transparent; color: #8a8a86; }
+.ib { flex: none; margin-top: -2px; width: 22px; height: 22px; padding: 0; border: 0; display: grid; place-items: center; background: transparent; color: #8a8a86; }
 .ib .ico { width: 16px; height: 16px; stroke: currentColor; }
 .ib:hover, .ib[aria-expanded="true"], .row.active .mapb { color: #f2f0ea; }
 .row.active .mapb .ico { stroke-width: 1.8; }

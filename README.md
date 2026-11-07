@@ -119,6 +119,29 @@ Any RED → **NO-GO** (investigate before making an offer), any AMBER → **INVE
 
 **Map credits.** Map: © OpenStreetMap contributors, OpenMapTiles, OpenFreeMap · Data: Microburbs (shown on the map). MapLibre GL JS (BSD-3-Clause).
 
+## Panel v3: quiet rows, notes behind "i", more rows
+Each row is now one line: a status dot, a hairline icon (thin single-weight strokes, no fills, after the reel's Hairline figures), the name and its one value in JetBrains Mono. Fraunces is kept for the verdict and the address. Everything technical sits behind the row's small **i** button, which opens a note inside the shadow DOM: the endpoint path, the source level and distance, the threshold rule, and caveats (modelled, 2021 Census, microburb estimate, ANEF, "verify on the s10.7 planning certificate"). The map toggle is a small map icon.
+
+New rows (all suburb calls use the exact SAL from the property profile; concurrency 4; data:null shows grey):
+
+| Row | Endpoint | Shown | Rule | Map |
+|---|---|---|---|---|
+| Owner-occupied / rented | `/suburbs/{SAL}/demographics/tenure` | Owner-occ 27% · Rented 70% (mesh-block row in the note) | info | renters % per mesh block, joined to `/shapes/mesh-blocks` |
+| Street forecast chart | `/properties/{gnaf}/street/profile` (already fetched) | 2024–2026 history, 2028 and 2030 targets dashed, suburb median dotted | as before | — |
+| Median house/unit price | `/suburbs/{SAL}/market/median-price-map?property_type=` | this mesh block vs the median of the suburb's microburb medians | info | per microburb (mesh block) choropleth; no SA1 price layer exists |
+| Investor concentration | `/market/investor-concentration` | mesh block `pct_investment` (suburb fallback) | AMBER ≥60% | — |
+| Mortgage stress | `/market/mortgage-stress` | mesh block score 0–100 | RED ≥60 · AMBER 40–60 | — |
+| Negative gearing | `/properties/{gnaf}/valuation/negative-gearing` | net cash flow per week at 80% LVR | grey if `rent_estimate_suspect` | — |
+| Affordability | `/market/affordability` | index + zone | info | — |
+| Gross yield | `/market/yield-pct` | house or unit by the address's dwelling type | AMBER <3% for units | — (`yield-map` returns no data for these suburbs) |
+| Vacancy rate | `/market/vacancy-rate` (+ `/market/vacancy-map` mesh block in the note) | house or unit | RED >3% · AMBER 2–3% | — |
+| Landlord insurance | `/risks/extras → insurance` (same response the ANEF row reads) | comprehensive median per year | info | — |
+| Planning: zone + height limit | `/development/building-controls` + `/zoning-map`, point-in-polygon at the property | Max height 9 m (HOB) · R1 | info | the planning layer (zoning + HOB extrusions) |
+| Development applications | `/development/applications` | count within 300 m + nearest (title, stage, date) | AMBER for a demolition / new-dwelling DA within 100 m | DA points |
+| Council rates | `/development/council-rates` | average annual rates | info | — |
+
+A full report is now about 23 API calls (was about 10); the zoning, building-controls, tenure, price and DA responses seed the drawer cache, so their maps open with no extra calls.
+
 ## How to run (extension)
 ```bash
 npm install
