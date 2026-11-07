@@ -426,7 +426,7 @@ export class Panel {
     const b5: HTMLElement[] = [pick, gi,
       h('p', '', `Microburbs estimate: ${money(o.avmLow)} – ${money(o.avmHigh)} (mid ${money(o.avmMid)}).`)];
     if (o.likelyPct !== null) b5.push(h('p', '', `This agency (${o.cohort || 'cohort n/a'}) sells about ${o.likelyPct}% above its guide${this.guide ? `: likely sale ≈ ${money(this.guide * (1 + o.likelyPct / 100))}` : ': likely sale ≈ guide × ' + (1 + o.likelyPct / 100).toFixed(2)}.`));
-    if (ceil !== null) b5.push(h('div', 'ceil', `Your ceiling: ${money(Math.round(ceil / 1000) * 1000)}`), h('p', '', `Your call; set it before ${this.method === 'auction' ? 'auction day' : 'you offer'}. AVM high less ${o.haircut}% for ${x.short.reds} red flag${x.short.reds === 1 ? '' : 's'}.`));
+    if (ceil !== null) b5.push(h('div', 'ceil', `Your ceiling: ${money(Math.round(ceil / 1000) * 1000)}`), h('p', '', `Your call; set it before ${this.method === 'auction' ? 'auction day' : 'you offer'}. the lower of AVM high and AVM mid + 3%, less ${o.haircut}% for ${x.short.reds} red flag${x.short.reds === 1 ? '' : 's'}.`));
     b5.push(h('p', '', METHOD_TIPS[this.method]), h('p', '', 'Look on the ad for: auction date and terms, a "make an offer" form, the price guide document, the contract download.'));
     return [
       card(1, 'Enquire or not?', [h('p', '', x.enquire.rec)]),

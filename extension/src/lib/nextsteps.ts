@@ -22,7 +22,7 @@ export function nextStepsOf(rows: Row[], verdict: Verdict, plain: Plain, b: Bund
   // 2. Enquiry message
   const q = [...plain.questions.filter((x) => !/walk away/i.test(x))];
   const q0 = b.quoting?.ok ? b.quoting.data || {} : null;
-  if (q0 && (/underquot/i.test(String(q0.cohort || '')) || flagged('quoting'))) q.unshift('What price guide are you quoting, and what did your last five similar sales sell for against their guides?');
+  if (q0 && (/underquot/i.test(String(q0.cohort || '')) || flagged('quoting'))) q.splice(0, q.length, ...q.filter((x) => !/last five similar/i.test(x))), q.unshift('What price guide are you quoting, and what did your last five similar sales sell for against their guides?');
   q.push('Is the contract and the s10.7 planning certificate available?');
   if (unit) q.push('What are the strata levies, and are any special levies planned?');
   const uniq = [...new Set(q)].slice(0, 4);
@@ -66,7 +66,9 @@ export function nextStepsOf(rows: Row[], verdict: Verdict, plain: Plain, b: Bund
 
 /** Walk-away ceiling: min(AVM high, comps median × 1.03) less 3% per red row (max 9%). */
 export function ceilingOf(o: NextSteps['offer']): number | null {
-  const caps = [o.avmHigh, o.comps !== null ? o.comps * 1.03 : null].filter((x): x is number => x !== null);
+  // No comparable-sales median is fetched yet, so the AVM mid-point stands in for it.
+  const comps = o.comps ?? o.avmMid;
+  const caps = [o.avmHigh, comps !== null ? comps * 1.03 : null].filter((x): x is number => x !== null);
   if (!caps.length) return null;
   return Math.min(...caps) * (1 - o.haircut / 100);
 }
