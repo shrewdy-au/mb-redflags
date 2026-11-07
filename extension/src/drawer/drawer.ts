@@ -420,7 +420,7 @@ function cardFor(L: MapLayer, p: any): { title: string; lines: string[] } {
   }
   if (L.kind === 'zoning') return { title: `${pr.sym_code || ''} ${pr.lay_class || ''}`.trim() || 'Zone', lines: [pr.parent ? `Group: ${pr.parent}` : ''].filter(Boolean) };
   if (L.kind === 'hob') return { title: `Height limit ${pr.height_m ?? '?'} ${pr.units || 'm'} (HOB)`, lines: [pr.band ? `Band ${pr.band}` : '', pr.fsr != null ? `FSR ${pr.fsr}:1` : ''].filter(Boolean) };
-  if (L.id === 'das') return { title: pr.title ? String(pr.title).slice(0, 90) : 'Development application',
+  if (L.id === 'das') return { title: pr.title ? (String(pr.title).length > 64 ? String(pr.title).slice(0, 62) + '…' : String(pr.title)) : 'Development application',
     lines: [pr.stage_display, pr.date, pr.category, money(pr.dollar_value), pr.address].filter((x) => x && x !== 'null').map(String) };
   if (L.id === 'ph_pts') return { title: 'Flagged home', lines: [`Chance ${pr.ph_chance ?? '?'}/5 (likely public housing)`] };
   if (L.kind === 'lines') return { title: 'Busy road', lines: [`Class: ${pr.road_class || '?'}`] };
@@ -436,7 +436,7 @@ function bboxGeom(g: any) {
 function handRing(g: any) {
   const [x0, y0, x1, y1] = bboxGeom(g);
   const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, kx = 111320 * Math.cos(cy * Math.PI / 180), ky = 110540;
-  const rx = Math.max(18, ((x1 - x0) * kx) / 2 * 1.25), ry = Math.max(18, ((y1 - y0) * ky) / 2 * 1.25);
+  const rx = Math.max(30, ((x1 - x0) * kx) / 2 * 1.25), ry = Math.max(30, ((y1 - y0) * ky) / 2 * 1.25);
   const pts: number[][] = [];
   for (let i = 0; i <= 44; i++) { const a = -0.5 + (i / 40) * Math.PI * 2, j = 1 + 0.06 * Math.sin(a * 3 + 1) + (i > 40 ? 0.08 : 0); pts.push([cx + (Math.cos(a) * rx * j) / kx, cy + (Math.sin(a) * ry * j) / ky]); }
   return { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: pts } };
