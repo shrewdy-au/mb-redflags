@@ -36,3 +36,9 @@ html, body { margin: 0; height: 100%; background: var(--ground); color: var(--in
 #legend .grp { display: flex; align-items: center; gap: 7px; margin: 7px 0 2px; font: 300 13px/1.2 var(--serif); color: var(--ink); cursor: pointer; }
 #legend .grp input { accent-color: #e7e5df; margin: 0; width: 12px; height: 12px; }
 #legend { max-height: calc(100% - 70px); overflow: auto; }
+
+#pick { left: 12px; bottom: 30px; max-width: 290px; padding-right: 30px; }
+#pick h2 { font: 300 15px/1.2 var(--serif); margin: 0 0 5px; }
+#pick div { font: 400 10.5px/1.55 var(--mono); color: #cfcdc7; }
+#pick .x { position: absolute; top: 6px; right: 6px; width: 20px; height: 20px; border: 0; background: transparent; color: var(--dim); font: 400 13px/1 var(--mono); cursor: pointer; }
+#pick .x:hover { color: var(--ink); }

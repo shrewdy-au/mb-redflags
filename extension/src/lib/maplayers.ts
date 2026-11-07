@@ -132,7 +132,7 @@ export async function buildMapPayload(rowId: string, ctx: MapCtx): Promise<MapPa
     if (r.ok) layers.push({ id: 'ph_sa1', kind: 'choropleth', label: 'Public housing share (SA1)', data: fc(nearby(featuresOf(r.data?.geojson), center, 1500)) });
     const flagged: any[] = ctx.bundle.ph200?.ok ? ctx.bundle.ph200.data?.flagged || [] : [];
     const pts = flagged.filter((f) => typeof f?.lat === 'number' && f.gnaf_pid !== ctx.gnaf)
-      .map((f) => ({ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [f.lng, f.lat] } }));
+      .map((f) => ({ type: 'Feature', properties: { ph_chance: f.ph_chance ?? null }, geometry: { type: 'Point', coordinates: [f.lng, f.lat] } })); // never the address
     layers.push({ id: 'ph_pts', kind: 'points', label: 'Flagged homes within 200 m', color: '#f4e9d8', data: fc(pts) });
     const legend: LegendItem[] = [
       ...PH_RAMP.map(([v, c], i) => ({ label: `${v}${i === PH_RAMP.length - 1 ? '%+' : `–${PH_RAMP[i + 1][0]}%`}`, color: c, style: 'fill' as const })),
@@ -194,8 +194,14 @@ export async function buildMapPayload(rowId: string, ctx: MapCtx): Promise<MapPa
     ]);
     const vals = new Map<string, number>();
     if (src.ok) for (const m of src.data?.microburbs || []) { const v = rowId === 'tenure' ? m?.renting_pct : m?.median_price; if (typeof v === 'number') vals.set(String(m.mb), v); }
+    // Click card extras: renters %, median price and street per mesh block, from responses the analysis already holds.
+    const extra = new Map<string, any>();
+    const tb = ctx.bundle.tenure?.ok ? ctx.bundle.tenure.data?.microburbs || [] : [];
+    const pb = ctx.bundle.priceMap?.ok ? ctx.bundle.priceMap.data?.microburbs || [] : [];
+    for (const m of tb) extra.set(String(m.mb), { ...(extra.get(String(m.mb)) || {}), renters: m.renting_pct ?? null, street: m.street ?? null });
+    for (const m of pb) extra.set(String(m.mb), { ...(extra.get(String(m.mb)) || {}), price: m.median_price ?? null, street: extra.get(String(m.mb))?.street ?? m.street ?? null });
     const feats = mbs.ok ? nearby(featuresOf(mbs.data?.geojson), center, 1200).filter((f) => vals.has(String(f.properties?.mb)))
-      .map((f) => ({ ...f, properties: { ...f.properties, v: vals.get(String(f.properties?.mb)) } })) : [];
+      .map((f) => ({ ...f, properties: { ...f.properties, ...(extra.get(String(f.properties?.mb)) || {}), ptype: ctx.bundle.ptype || 'house', v: vals.get(String(f.properties?.mb)) } })) : [];
     const ramp: Array<[number, string]> = rowId === 'tenure'
       ? [[0, '#22303a'], [25, '#3d6b86'], [50, '#7fb3c8'], [70, '#e5b45a'], [90, '#f4e27a']]
       : [[600000, '#22303a'], [1000000, '#3d6b86'], [1500000, '#7fb3c8'], [2500000, '#e5b45a'], [4000000, '#f4e27a']];
@@ -211,7 +217,7 @@ export async function buildMapPayload(rowId: string, ctx: MapCtx): Promise<MapPa
   if (rowId === 'das') {
     const r = await cached(ctx, `${S}/development/applications`);
     const list: any[] = r.ok ? (Array.isArray(r.data) ? r.data : r.data?.applications || r.data?.items || r.data?.das || []) : [];
-    const pts = list.filter((a) => typeof (a.lat ?? a.latitude) === 'number').map((a) => ({ type: 'Feature', properties: { dollar_value: a.dollar_value ?? a.cost ?? 0 },
+    const pts = list.filter((a) => typeof (a.lat ?? a.latitude) === 'number').map((a) => ({ type: 'Feature', properties: { dollar_value: a.dollar_value ?? a.cost ?? 0, title: a.title ?? null, stage_display: a.stage_display ?? a.stage ?? null, date: a.date ?? null, category: a.category ?? null, address: a.address ?? null },
       geometry: { type: 'Point', coordinates: [a.lng ?? a.lon ?? a.longitude, a.lat ?? a.latitude] } }));
     const near = nearby(pts, center, 1000);
     return { ...base, title: 'Development applications', sub: 'MICROBURBS · DEVELOPMENT/APPLICATIONS', layers: [{ id: 'das', kind: 'points', label: 'DAs', color: '#f4e9d8', data: fc(near) }],

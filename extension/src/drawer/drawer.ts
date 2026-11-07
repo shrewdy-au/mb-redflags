@@ -376,8 +376,10 @@ function apply() {
   if (!map) return;
   const ps = currentSet;
   renderCards(ps);
+  closePick(); setHl(null);
   if (!ps.length) { clearData(); setMarker(null); return; }
   if (ps.length > 1 && mode === 'stack') drawStack(ps); else drawFlat(ps);
+  for (const id of ['hl_fill', 'hl_line', 'hl_pt', 'hl_ring']) if (map.getLayer(id)) map.moveLayer(id);
 }
 
 function show(ps: MapPayload[], m: 'stack' | 'flat') {
@@ -389,9 +391,90 @@ function show(ps: MapPayload[], m: 'stack' | 'flat') {
     const stop = () => { userMoved = true; cancelAnimationFrame(orbit); };
     map.on('mousedown', stop); map.on('touchstart', stop); map.on('wheel', stop); map.on('dragstart', stop);
     map.on('move', () => { if (slabs.size) placeTabs(); });
-    map.on('load', apply);
+    map.on('load', () => { wireInteraction(); apply(); });
   } else if (map.loaded() || map.isStyleLoaded()) apply(); else map.once('load', apply);
 }
+
+// ---------- interaction: hover highlight, click card + red hand circle (inside the iframe, no API calls) ----------
+const SUFFIX = ['_hatch', '_ln', '_line', '_glow', '_lid', '_pat'];
+const PILLARS = ['st_guide', 'st_subject'];
+function layerOfId(id: string): MapLayer | undefined {
+  let k = id.startsWith('st_') ? id.slice(3) : id;
+  for (const s of SUFFIX) if (k.endsWith(s)) { k = k.slice(0, -s.length); break; }
+  return uniqLayers(currentSet).find((L) => L.id === k);
+}
+const overlayIds = () => (map?.getStyle().layers || []).map((l) => l.id).filter((id) => !BASE_IDS.includes(id) && !PILLARS.includes(id) && !id.startsWith('hl_') && !id.endsWith('_glow'));
+function hitAt(pt: ML.PointLike): { f: any; L: MapLayer; id: string } | undefined {
+  if (!map) return;
+  const ids = overlayIds();
+  if (!ids.length) return;
+  for (const f of map.queryRenderedFeatures(pt, { layers: ids })) { const L = layerOfId(f.layer.id); if (L) return { f, L, id: f.layer.id }; }
+}
+const money = (v: any) => (typeof v === 'number' && v > 0 ? (v >= 1e6 ? `$${(v / 1e6).toFixed(v >= 1e7 ? 0 : 2)}m` : `$${Math.round(v).toLocaleString('en-AU')}`) : '');
+function cardFor(L: MapLayer, p: any): { title: string; lines: string[] } {
+  const pr = p || {};
+  if (L.id === 'ph_sa1') return { title: `SA1 ${pr.sa1 ?? '?'}`, lines: [`Public housing ${pr.public_housing_pct ?? '?'}% (2021 Census)`] };
+  if (L.id === 'renters_mb' || L.id === 'price_mb') {
+    const lines = [pr.street ? `${pr.street}` : '', pr.renters != null ? `Renters ${Math.round(pr.renters)}%` : '', pr.price != null ? `Median ${pr.ptype || 'house'} ${money(pr.price)}` : ''].filter(Boolean);
+    return { title: `Mesh block ${pr.mb ?? '?'}`, lines };
+  }
+  if (L.kind === 'zoning') return { title: `${pr.sym_code || ''} ${pr.lay_class || ''}`.trim() || 'Zone', lines: [pr.parent ? `Group: ${pr.parent}` : ''].filter(Boolean) };
+  if (L.kind === 'hob') return { title: `Height limit ${pr.height_m ?? '?'} ${pr.units || 'm'} (HOB)`, lines: [pr.band ? `Band ${pr.band}` : '', pr.fsr != null ? `FSR ${pr.fsr}:1` : ''].filter(Boolean) };
+  if (L.id === 'das') return { title: pr.title ? String(pr.title).slice(0, 90) : 'Development application',
+    lines: [pr.stage_display, pr.date, pr.category, money(pr.dollar_value), pr.address].filter((x) => x && x !== 'null').map(String) };
+  if (L.id === 'ph_pts') return { title: 'Flagged home', lines: [`Chance ${pr.ph_chance ?? '?'}/5 (likely public housing)`] };
+  if (L.kind === 'lines') return { title: 'Busy road', lines: [`Class: ${pr.road_class || '?'}`] };
+  if (L.kind === 'heat') return { title: 'Noise', lines: [`Relative intensity ${pr.fill_opacity ?? '?'} (0–1)`] };
+  return { title: L.label, lines: [pr.category && pr.category !== 'null' ? `Category: ${pr.category}` : '', pr.name && pr.name !== 'null' ? String(pr.name) : ''].filter(Boolean) };
+}
+function bboxGeom(g: any) {
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  const w = (c: any) => { if (typeof c?.[0] === 'number') { x0 = Math.min(x0, c[0]); y0 = Math.min(y0, c[1]); x1 = Math.max(x1, c[0]); y1 = Math.max(y1, c[1]); } else if (Array.isArray(c)) c.forEach(w); };
+  w(g?.coordinates); return [x0, y0, x1, y1];
+}
+/** A wobbly hand-drawn ring round the feature's ground footprint. */
+function handRing(g: any) {
+  const [x0, y0, x1, y1] = bboxGeom(g);
+  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, kx = 111320 * Math.cos(cy * Math.PI / 180), ky = 110540;
+  const rx = Math.max(18, ((x1 - x0) * kx) / 2 * 1.25), ry = Math.max(18, ((y1 - y0) * ky) / 2 * 1.25);
+  const pts: number[][] = [];
+  for (let i = 0; i <= 44; i++) { const a = -0.5 + (i / 40) * Math.PI * 2, j = 1 + 0.06 * Math.sin(a * 3 + 1) + (i > 40 ? 0.08 : 0); pts.push([cx + (Math.cos(a) * rx * j) / kx, cy + (Math.sin(a) * ry * j) / ky]); }
+  return { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: pts } };
+}
+const EMPTY_FC = { type: 'FeatureCollection', features: [] as any[] };
+function ensureHl() {
+  if (!map || map.getSource('hl')) return;
+  map.addSource('hl', { type: 'geojson', data: EMPTY_FC as any });
+  map.addSource('hl_ring', { type: 'geojson', data: EMPTY_FC as any });
+  map.addLayer({ id: 'hl_fill', type: 'fill', source: 'hl', filter: ['==', ['geometry-type'], 'Polygon'], paint: { 'fill-color': '#f2f0ea', 'fill-opacity': .18 } } as any);
+  map.addLayer({ id: 'hl_line', type: 'line', source: 'hl', paint: { 'line-color': '#f2f0ea', 'line-width': 2.5, 'line-opacity': .95 } } as any);
+  map.addLayer({ id: 'hl_pt', type: 'circle', source: 'hl', filter: ['==', ['geometry-type'], 'Point'], paint: { 'circle-radius': 8, 'circle-color': 'rgba(0,0,0,0)', 'circle-stroke-color': '#f2f0ea', 'circle-stroke-width': 2, 'circle-pitch-alignment': 'map' } } as any);
+  map.addLayer({ id: 'hl_ring', type: 'line', source: 'hl_ring', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#ff3131', 'line-width': 2.6 } } as any);
+}
+const setHl = (f: any | null) => { ensureHl(); (map?.getSource('hl') as ML.GeoJSONSource | undefined)?.setData((f ? { type: 'FeatureCollection', features: [{ type: 'Feature', properties: {}, geometry: f.geometry }] } : EMPTY_FC) as any); };
+function closePick() { $('pick').hidden = true; ensureHl(); (map?.getSource('hl_ring') as ML.GeoJSONSource | undefined)?.setData(EMPTY_FC as any); }
+function openPick(f: any, L: MapLayer) {
+  const c = cardFor(L, f.properties);
+  const box = $('pick');
+  const x = el('button', 'x', '×') as HTMLButtonElement; x.setAttribute('aria-label', 'Close'); x.onclick = closePick;
+  box.replaceChildren(x, el('h2', '', c.title), ...c.lines.map((l) => el('div', '', l)));
+  box.hidden = false;
+  ensureHl(); (map?.getSource('hl_ring') as ML.GeoJSONSource).setData({ type: 'FeatureCollection', features: [handRing(f.geometry)] } as any);
+}
+function wireInteraction() {
+  if (!map) return;
+  let last = '';
+  map.on('mousemove', (e) => {
+    const h = hitAt(e.point);
+    map!.getCanvas().style.cursor = h ? 'pointer' : '';
+    const key = h ? `${h.id}:${JSON.stringify(h.f.properties)}` : '';
+    if (key !== last) { last = key; setHl(h ? h.f : null); }
+  });
+  map.on('mouseout', () => { last = ''; setHl(null); });
+  map.on('click', (e) => { const h = hitAt(e.point); if (h) openPick(h.f, h.L); else closePick(); });
+}
+(window as any).__mbrfClickAt = (x: number, y: number) => { const h = hitAt([x, y]); if (h) { setHl(h.f); openPick(h.f, h.L); } return h ? h.L.id : null; };
+(window as any).__mbrfProject = (lng: number, lat: number) => map?.project([lng, lat]);
 
 window.addEventListener('message', (e) => {
   // Only the embedding content script (our parent frame) talks to us, and only GeoJSON comes through.

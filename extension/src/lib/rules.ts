@@ -359,11 +359,11 @@ function v3Rows(b: Bundle): Row[] {
       const withD = list.map((a) => ({ a, d: c && typeof (a.lat ?? a.latitude) === 'number' ? haversine(c[1], c[0], a.lat ?? a.latitude, a.lng ?? a.lon ?? a.longitude) : null }))
         .filter((x) => x.d !== null).sort((x, y) => x.d! - y.d!);
       const near = withD.filter((x) => x.d! <= 300);
-      const big = withD.find((x) => x.d! <= 100 && /demoli|new dwelling|erect|construct/i.test(`${x.a.title || ''} ${x.a.description || ''} ${x.a.type || ''}`));
+      const big = withD.find((x) => x.d! <= 100 && /demoli|new dwelling|erect|construct/i.test(`${x.a.title || ''} ${x.a.description || ''} ${x.a.type || ''} ${x.a.category || ''}`));
       const n0 = withD[0];
       out.push({ id: 'das', label: 'Development applications', status: big ? 'AMBER' : 'INFO',
         summary: `${near.length} within 300 m${n0 ? ` · nearest ${fmtM(n0.d)}` : ''}`, endpoint: ep, level: 'property', distance_m: n0?.d ?? null,
-        detail: n0 ? `${n0.a.title || n0.a.description || 'DA'} · ${n0.a.stage || n0.a.status || '?'} · ${n0.a.date || n0.a.lodged || n0.a.lodgement_date || '?'}` : undefined });
+        detail: n0 ? `${n0.a.title || n0.a.description || 'DA'} · ${n0.a.stage_display || n0.a.stage || n0.a.status || '?'} · ${n0.a.date || n0.a.lodged || n0.a.lodgement_date || '?'}` : undefined });
     } else out.push(noData('das', 'Development applications', b.das, ep, 'suburb'));
   }
   // 13. Council rates
