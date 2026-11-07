@@ -1,0 +1,6 @@
+node_modules
+out
+proxy/.env
+extension/src
+fixtures
+scripts
