@@ -50,7 +50,7 @@ export type ToContent = { type: 'REPORT'; report: Report };
 
 // Map drawer payload: background -> content (sendResponse) -> drawer iframe (postMessage). GeoJSON only, no key.
 export type MapLayerKind = 'hazard' | 'choropleth' | 'points' | 'zoning' | 'hob' | 'heat' | 'lines';
-export interface MapLayer { id: string; kind: MapLayerKind; label: string; color?: string; data: any }
+export interface MapLayer { id: string; kind: MapLayerKind; label: string; color?: string; data: any; prop?: string; ramp?: Array<[number, string]> }
 export interface LegendItem { label: string; color: string; style?: 'fill' | 'hatch' | 'line' | 'dot' | 'box' }
 export interface MapPayload {
   type: 'MBRF_MAP';

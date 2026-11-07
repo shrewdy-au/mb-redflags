@@ -142,7 +142,7 @@ export async function buildMapPayload(rowId: string, ctx: MapCtx): Promise<MapPa
       empty: isEmpty(layers) ? 'No mapped public housing within 1 km' : undefined, error: !r.ok && r.kind !== 'NO_DATA' ? errText(r) : undefined };
   }
 
-  if (rowId === 'planning') {
+  if (rowId === 'planning' || rowId === 'max_height') {
     const [z, bc] = await Promise.all([cached(ctx, `${S}/development/zoning-map`), cached(ctx, `${S}/development/building-controls`)]);
     const layers: MapLayer[] = [];
     const legend: LegendItem[] = [];
@@ -185,6 +185,37 @@ export async function buildMapPayload(rowId: string, ctx: MapCtx): Promise<MapPa
     const layers: MapLayer[] = r.ok ? [{ id: 'easements', kind: 'hazard', label: 'Easements', color: '#e5b45a', data: fc(nearby(featuresOf(r.data?.geojson), center)) }] : [];
     return { ...base, title: 'Easements', sub: 'MICROBURBS · SHAPES/EASEMENTS', layers, legend: [{ label: 'Easement', color: '#e5b45a', style: 'hatch' }],
       empty: isEmpty(layers) ? 'No mapped easements within 1 km' : undefined, error: !r.ok && r.kind !== 'NO_DATA' ? errText(r) : undefined };
+  }
+
+  if (rowId === 'tenure' || rowId === 'median_price') {
+    const [mbs, src] = await Promise.all([
+      cached(ctx, `${S}/shapes/mesh-blocks`, { geojson: 'true' }),
+      rowId === 'tenure' ? cached(ctx, `${S}/demographics/tenure`) : cached(ctx, `${S}/market/median-price-map`, { property_type: ctx.bundle.ptype || 'house' })
+    ]);
+    const vals = new Map<string, number>();
+    if (src.ok) for (const m of src.data?.microburbs || []) { const v = rowId === 'tenure' ? m?.renting_pct : m?.median_price; if (typeof v === 'number') vals.set(String(m.mb), v); }
+    const feats = mbs.ok ? nearby(featuresOf(mbs.data?.geojson), center, 1200).filter((f) => vals.has(String(f.properties?.mb)))
+      .map((f) => ({ ...f, properties: { ...f.properties, v: vals.get(String(f.properties?.mb)) } })) : [];
+    const ramp: Array<[number, string]> = rowId === 'tenure'
+      ? [[0, '#22303a'], [25, '#3d6b86'], [50, '#7fb3c8'], [70, '#e5b45a'], [90, '#f4e27a']]
+      : [[600000, '#22303a'], [1000000, '#3d6b86'], [1500000, '#7fb3c8'], [2500000, '#e5b45a'], [4000000, '#f4e27a']];
+    const label = rowId === 'tenure' ? 'Renters % (mesh block)' : `Median ${ctx.bundle.ptype || 'house'} price (mesh block)`;
+    const fmtv = (v: number) => (rowId === 'tenure' ? `${v}%` : `$${(v / 1e6).toFixed(v < 1e6 ? 2 : 1)}m`);
+    const layers: MapLayer[] = [{ id: rowId === 'tenure' ? 'renters_mb' : 'price_mb', kind: 'choropleth', label, prop: 'v', ramp, data: fc(feats) }];
+    return { ...base, title: rowId === 'tenure' ? 'Renters by mesh block' : `Median ${ctx.bundle.ptype || 'house'} price`,
+      sub: `MICROBURBS · ${rowId === 'tenure' ? 'DEMOGRAPHICS/TENURE' : 'MARKET/MEDIAN-PRICE-MAP'} + SHAPES/MESH-BLOCKS`, layers,
+      legend: ramp.map(([v, c], i) => ({ label: i === ramp.length - 1 ? `${fmtv(v)}+` : `${fmtv(v)}–${fmtv(ramp[i + 1][0])}`, color: c, style: 'fill' as const })),
+      empty: feats.length ? undefined : `No mapped ${rowId === 'tenure' ? 'tenure' : 'prices'} within 1 km`, error: !mbs.ok ? errText(mbs) : !src.ok && src.kind !== 'NO_DATA' ? errText(src) : undefined };
+  }
+
+  if (rowId === 'das') {
+    const r = await cached(ctx, `${S}/development/applications`);
+    const list: any[] = r.ok ? (Array.isArray(r.data) ? r.data : r.data?.applications || r.data?.items || r.data?.das || []) : [];
+    const pts = list.filter((a) => typeof (a.lat ?? a.latitude) === 'number').map((a) => ({ type: 'Feature', properties: { dollar_value: a.dollar_value ?? a.cost ?? 0 },
+      geometry: { type: 'Point', coordinates: [a.lng ?? a.lon ?? a.longitude, a.lat ?? a.latitude] } }));
+    const near = nearby(pts, center, 1000);
+    return { ...base, title: 'Development applications', sub: 'MICROBURBS · DEVELOPMENT/APPLICATIONS', layers: [{ id: 'das', kind: 'points', label: 'DAs', color: '#f4e9d8', data: fc(near) }],
+      legend: [{ label: 'Development application', color: '#f4e9d8', style: 'dot' }], empty: near.length ? undefined : 'No mapped development applications within 1 km' };
   }
 
   if (rowId === 'street') {

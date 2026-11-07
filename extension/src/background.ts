@@ -51,6 +51,14 @@ async function analyse(tabId: number, a: AddressInfo) {
   const out = await runAnalysis(a, asking, () => tabs.get(tabId)?.seq !== seq, (r) => send(tabId, r));
   if (!out) return; // superseded by a newer address
   st.bundle = out.bundle;
+  // Seed the drawer cache with suburb layers the analysis already fetched, so opening their maps costs nothing.
+  if (out.report.sal) {
+    const S = `/v1/suburbs/${encodeURIComponent(out.report.sal)}`;
+    const b = out.bundle;
+    const seed: Array<[string, any]> = [[`${S}/development/zoning-map`, b.zoning], [`${S}/development/building-controls`, b.controls],
+      [`${S}/demographics/tenure`, b.tenure], [`${S}/market/median-price-map?property_type=${b.ptype || 'house'}`, b.priceMap], [`${S}/development/applications`, b.das]];
+    for (const [k, v] of seed) if (v?.ok) st.geo.set(k, Promise.resolve(v));
+  }
   st.report = out.report;
   send(tabId, st.report);
 }

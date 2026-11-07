@@ -45,6 +45,13 @@ function houseStyle(): ML.StyleSpecification {
 
 const PH_RAMP = ['interpolate', ['linear'], ['to-number', ['coalesce', ['get', 'public_housing_pct'], 0]], 0, '#22303a', 5, '#3d6b86', 15, '#7fb3c8', 30, '#e5b45a', 50, '#f4e27a'];
 
+function rampOf(L: MapLayer): any {
+  if (!L.ramp || !L.prop) return PH_RAMP;
+  const e: any[] = ['interpolate', ['linear'], ['to-number', ['coalesce', ['get', L.prop], L.ramp[0][0]]]];
+  L.ramp.forEach(([v, c]) => e.push(v, c));
+  return e;
+}
+
 function hatchImage(color: string) {
   const n = 32, c = document.createElement('canvas'); c.width = c.height = n; const g = c.getContext('2d')!;
   g.strokeStyle = color; g.lineWidth = 3; g.globalAlpha = .85;
@@ -69,7 +76,7 @@ function addLayer(map: ML.Map, L: MapLayer) {
     add({ id: `${L.id}_glow`, type: 'line', filter: isLine, paint: { 'line-color': '#000', 'line-width': 12, 'line-blur': 6, 'line-opacity': .7 } });
     add({ id: `${L.id}_line`, type: 'line', filter: isLine, layout: { 'line-cap': 'round' }, paint: { 'line-color': c, 'line-width': 3, 'line-dasharray': [2, 1.5] } });
   } else if (L.kind === 'choropleth') {
-    add({ id: L.id, type: 'fill', paint: { 'fill-color': PH_RAMP, 'fill-opacity': .6 } }, true);
+    add({ id: L.id, type: 'fill', paint: { 'fill-color': rampOf(L), 'fill-opacity': .6 } }, true);
     add({ id: `${L.id}_ln`, type: 'line', paint: { 'line-color': '#0d0d0d', 'line-width': 1.2 } }, true);
   } else if (L.kind === 'zoning') {
     const fc = ['coalesce', ['get', 'color'], '#b8b8b8'];
@@ -251,7 +258,7 @@ let anim = 0;
 function slabColor(L: MapLayer): { paint: any; tab: string; hx: any } {
   const c = L.color || '#b8b8b8';
   if (L.kind === 'zoning') return { paint: ['coalesce', ['get', 'color'], '#b8b8b8'], tab: L.data.features[0]?.properties?.color || c, hx: null };
-  if (L.kind === 'choropleth') return { paint: PH_RAMP, tab: '#e5b45a', hx: null };
+  if (L.kind === 'choropleth') return { paint: rampOf(L), tab: '#e5b45a', hx: null };
   if (L.kind === 'heat') return { paint: ['coalesce', ['get', 'color'], '#990000'], tab: '#990000', hx: null };
   if (L.kind === 'hob') { const hx = ['to-number', ['coalesce', ['get', 'height_m'], 0]]; return { paint: ['interpolate', ['linear'], hx, 0, '#1f6f7a', 40, '#4fd8e8'], tab: '#4fd8e8', hx }; }
   return { paint: c, tab: c, hx: null };

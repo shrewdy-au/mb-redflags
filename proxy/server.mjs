@@ -36,6 +36,11 @@ const ALLOW = [
   // Map drawer layers (GeoJSON), fetched only when the user opens a row's map.
   /^\/v1\/suburbs\/[^/]+\/shapes\/(hazards|public-housing-sa1|noise-heatmap|busy-roads|easements)$/,
   /^\/v1\/suburbs\/[^/]+\/development\/(zoning-map|building-controls)$/,
+  // v3 rows: tenure, market and development layers.
+  /^\/v1\/suburbs\/[^/]+\/shapes\/mesh-blocks$/,
+  /^\/v1\/suburbs\/[^/]+\/market\/(median-price-map|investor-concentration|mortgage-stress|affordability|yield-pct|yield-map|vacancy-rate|vacancy-map)$/,
+  /^\/v1\/suburbs\/[^/]+\/development\/(applications|council-rates)$/,
+  /^\/v1\/properties\/[A-Za-z0-9]+\/valuation\/negative-gearing$/,
   // Used only by scripts/ (demo listing pick + held-out check), never by the extension.
   /^\/v1\/suburbs\/[^/]+\/(listings\/for-sale|properties|demographics\/tenure)$/
 ];

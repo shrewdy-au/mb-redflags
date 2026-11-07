@@ -3,6 +3,7 @@
 import type { MbResult } from './mb';
 import type { Row, Status, Verdict } from './types';
 import { haversine } from './geo';
+import { centerOf, containing } from './maplayers';
 
 export interface Bundle {
   gnaf: string;
@@ -15,6 +16,9 @@ export interface Bundle {
   transport?: MbResult;
   extras?: MbResult;
   hazardCounts?: MbResult;
+  ptype?: 'house' | 'unit';
+  tenure?: MbResult; priceMap?: MbResult; investor?: MbResult; stress?: MbResult; negGearing?: MbResult; afford?: MbResult;
+  yieldPct?: MbResult; vacancy?: MbResult; vacMap?: MbResult; das?: MbResult; rates?: MbResult; zoning?: MbResult; controls?: MbResult;
   asking?: number | null;
 }
 
@@ -221,11 +225,161 @@ function transportRow(b: Bundle): Row {
   return { id: 'transport', label: 'Nearest transport', status: 'INFO', summary: parts.join(' · ') || 'none within radius', endpoint: ep, level: 'property' };
 }
 
+const pct = (v: number | null, dp = 0) => (v === null ? '?' : `${v.toFixed(dp)}%`);
+const mbOf = (b: Bundle) => (b.profile?.ok ? String(b.profile.data?.mesh_block ?? '') : '');
+const median = (xs: number[]) => { const a = xs.filter((x) => isFinite(x)).sort((x, y) => x - y); return a.length ? (a.length % 2 ? a[(a.length - 1) / 2] : (a[a.length / 2 - 1] + a[a.length / 2]) / 2) : null; };
+const featuresOf = (g: any): any[] => (g && Array.isArray(g.features) ? g.features.filter((f: any) => f && f.geometry) : []);
+
+/** v3 rows: tenure, market, negative gearing, insurance, planning limits, DAs, rates. */
+function v3Rows(b: Bundle): Row[] {
+  const out: Row[] = [];
+  const S = '/v1/suburbs/{SAL}';
+  const mb = mbOf(b);
+  // 1. Tenure
+  {
+    const ep = `${S}/demographics/tenure`;
+    if (b.tenure?.ok) {
+      const d = b.tenure.data || {};
+      const own = num(d.owner_occupied_pct), rent = num(d.renting_pct);
+      const mine = (d.microburbs || []).find((m: any) => String(m?.mb) === mb);
+      const mOwn = mine ? (num(mine.owned_outright_pct) ?? 0) + (num(mine.mortgaged_pct) ?? 0) : null;
+      out.push({ id: 'tenure', label: 'Owner-occupied / rented', status: 'INFO', summary: `Owner-occ ${pct(own)} · Rented ${pct(rent)}`, endpoint: ep, level: 'suburb',
+        detail: mine ? `This mesh block (${mine.street || mb}): owner-occ ${pct(mOwn)} · rented ${pct(num(mine.renting_pct))}` : `Census ${d.census_year ?? 2021}; tier ${d.tier || '?'}` });
+    } else out.push(noData('tenure', 'Owner-occupied / rented', b.tenure, ep, 'suburb'));
+  }
+  // 3. Median price (microburb vs suburb)
+  {
+    const ep = `${S}/market/median-price-map?property_type=${b.ptype || 'house'}`;
+    if (b.priceMap?.ok) {
+      const list: any[] = b.priceMap.data?.microburbs || [];
+      const mine = list.find((m) => String(m?.mb) === mb);
+      const sub = median(list.map((m) => num(m?.median_price) ?? NaN));
+      const v = mine ? num(mine.median_price) : null;
+      out.push({ id: 'median_price', label: `Median ${b.ptype || 'house'} price`, status: 'INFO',
+        summary: v ? `${fmt$(v)} here vs ${fmt$(sub)} suburb${sub ? ` (${v >= sub ? '+' : ''}${(((v / sub) - 1) * 100).toFixed(0)}%)` : ''}` : `suburb ${fmt$(sub)} (no value for this mesh block)`,
+        endpoint: ep, level: 'mesh block', detail: `As of ${b.priceMap.data?.as_of || '?'}; suburb figure = median of ${list.length} microburb medians.` });
+    } else out.push(noData('median_price', `Median ${b.ptype || 'house'} price`, b.priceMap, ep, 'mesh block'));
+  }
+  // 4. Investor concentration
+  {
+    const ep = `${S}/market/investor-concentration`;
+    if (b.investor?.ok) {
+      const d = b.investor.data || {};
+      const mine = (d.mbs || []).find((m: any) => String(m?.mb) === mb);
+      const v = mine ? num(mine.pct_investment) : num(d.rental_share_pct);
+      out.push({ id: 'investor', label: 'Investor concentration', status: v !== null && v >= 60 ? 'AMBER' : v === null ? 'GREY' : 'GREEN',
+        summary: `${pct(v)} investment-owned${mine ? '' : ' (suburb)'}`, endpoint: ep, level: mine ? 'mesh block' : 'suburb', detail: `Suburb ${pct(num(d.rental_share_pct), 1)}` });
+    } else out.push(noData('investor', 'Investor concentration', b.investor, ep, 'mesh block'));
+  }
+  // 5. Mortgage stress
+  {
+    const ep = `${S}/market/mortgage-stress`;
+    if (b.stress?.ok) {
+      const d = b.stress.data || {};
+      const mine = (d.mbs || []).find((m: any) => String(m?.mb) === mb);
+      const v = mine ? num(mine.score) : num(d.score);
+      out.push({ id: 'mortgage_stress', label: 'Mortgage stress', status: v === null ? 'GREY' : v >= 60 ? 'RED' : v >= 40 ? 'AMBER' : 'GREEN',
+        summary: `score ${v ?? '?'} / 100${mine ? '' : ' (suburb)'}`, endpoint: ep, level: mine ? 'mesh block' : 'suburb', detail: `Suburb score ${num(d.score) ?? '?'}` });
+    } else out.push(noData('mortgage_stress', 'Mortgage stress', b.stress, ep, 'mesh block'));
+  }
+  // 6. Negative gearing
+  {
+    const ep = '/v1/properties/{gnaf}/valuation/negative-gearing';
+    if (b.negGearing?.ok) {
+      const d = b.negGearing.data || {};
+      const wk = num(d.net_cashflow_80lvr_wk);
+      const sus = d.rent_estimate_suspect === true;
+      out.push({ id: 'neg_gearing', label: 'Negative gearing', status: sus ? 'GREY' : 'INFO',
+        summary: wk === null ? 'n/a' : `${wk < 0 ? '−' : '+'}$${Math.abs(Math.round(wk)).toLocaleString('en-AU')}/wk at 80% LVR${d.is_negatively_geared ? ' (negatively geared)' : ''}`,
+        endpoint: ep, level: 'property', detail: `Gross yield ${d.gross_yield_pct ?? '?'}%${sus ? '; rent estimate flagged suspect, so not rated' : ''}` });
+    } else out.push(noData('neg_gearing', 'Negative gearing', b.negGearing, ep, 'property'));
+  }
+  // 7. Affordability
+  {
+    const ep = `${S}/market/affordability`;
+    if (b.afford?.ok) {
+      const d = b.afford.data || {};
+      out.push({ id: 'affordability', label: 'Affordability', status: 'INFO', summary: `index ${d.index ?? '?'} · ${d.zone || ''}`.trim(), endpoint: ep, level: 'suburb',
+        detail: `Price to salary ${num(d.price_to_salary)?.toFixed(1) ?? '?'}; postcode ${d.poa || '?'}` });
+    } else out.push(noData('affordability', 'Affordability', b.afford, ep, 'suburb'));
+  }
+  // 8. Gross yield
+  {
+    const ep = `${S}/market/yield-pct`;
+    if (b.yieldPct?.ok) {
+      const d = b.yieldPct.data || {};
+      const v = num(d[b.ptype || 'house']);
+      const p = v === null ? null : v * 100;
+      out.push({ id: 'yield', label: `Gross yield (${b.ptype || 'house'})`, status: p !== null && b.ptype === 'unit' && p < 3 ? 'AMBER' : p === null ? 'GREY' : 'INFO',
+        summary: pct(p, 1), endpoint: ep, level: 'suburb', detail: `Houses ${pct(num(d.house) !== null ? num(d.house)! * 100 : null, 1)} · units ${pct(num(d.unit) !== null ? num(d.unit)! * 100 : null, 1)} · as of ${d.as_of || '?'}` });
+    } else out.push(noData('yield', 'Gross yield', b.yieldPct, ep, 'suburb'));
+  }
+  // 9. Vacancy
+  {
+    const ep = `${S}/market/vacancy-rate`;
+    if (b.vacancy?.ok) {
+      const d = b.vacancy.data || {};
+      const v = num(d[b.ptype || 'house']?.value);
+      const mine = b.vacMap?.ok ? (b.vacMap.data?.mbs || []).find((m: any) => String(m?.mb) === mb) : undefined;
+      const p = v === null ? null : v * 100;
+      out.push({ id: 'vacancy', label: 'Vacancy rate', status: p === null ? 'GREY' : p > 3 ? 'RED' : p >= 2 ? 'AMBER' : 'GREEN',
+        summary: `${pct(p, 1)} (${b.ptype || 'house'}s, suburb)`, endpoint: ep, level: 'suburb',
+        detail: [mine ? `Mesh block vacancy ${pct(num(mine.vacancy_pct), 1)}${mine.has_listings ? '' : ' (no listings)'}` : '', `as of ${d.as_of || '?'}`].filter(Boolean).join(' · ') });
+    } else out.push(noData('vacancy', 'Vacancy rate', b.vacancy, ep, 'suburb'));
+  }
+  // 10. Landlord insurance (same risks/extras response the ANEF row reads)
+  {
+    const ep = `${S}/risks/extras → insurance`;
+    const ins = b.extras?.ok ? b.extras.data?.insurance : null;
+    if (ins && (num(ins.comp_med) !== null || num(ins.basic_med) !== null)) {
+      out.push({ id: 'insurance', label: 'Landlord insurance', status: 'INFO', summary: `~${fmt$(num(ins.comp_med))}/yr median (comprehensive)`, endpoint: ep, level: 'suburb',
+        detail: `Basic ~${fmt$(num(ins.basic_med))}/yr; ${ins.n ?? '?'} mesh blocks` });
+    } else out.push(noData('insurance', 'Landlord insurance', b.extras, ep, 'suburb'));
+  }
+  // 11. Max height + zone at the property (point-in-polygon)
+  {
+    const ep = `${S}/development/building-controls + zoning-map`;
+    const c = centerOf(b);
+    const hob = b.controls?.ok ? containing(featuresOf(b.controls.data?.hob?.geojson), c) : undefined;
+    const zone = b.zoning?.ok ? containing(featuresOf(b.zoning.data?.geojson), c) : undefined;
+    const fsr = b.controls?.ok ? containing(featuresOf(b.controls.data?.fsr?.geojson), c) : undefined;
+    if (hob || zone) {
+      out.push({ id: 'max_height', label: 'Planning: zone + height limit', status: 'INFO',
+        summary: [hob ? `Max height ${num(hob.properties?.height_m) ?? '?'} m (HOB)` : '', zone ? `${zone.properties?.sym_code || ''} ${zone.properties?.lay_class || ''}`.trim() : ''].filter(Boolean).join(' · '),
+        endpoint: ep, level: 'property', detail: fsr ? `FSR ${fsr.properties?.fsr ?? fsr.properties?.value ?? '?'}:1` : undefined, verify: VERIFY });
+    } else out.push({ ...noData('max_height', 'Planning: zone + height limit', b.controls, ep, 'property'), summary: c ? 'no control mapped at this point' : 'no property position' });
+  }
+  // 12. Development applications
+  {
+    const ep = `${S}/development/applications`;
+    if (b.das?.ok) {
+      const c = centerOf(b);
+      const list: any[] = Array.isArray(b.das.data) ? b.das.data : b.das.data?.applications || b.das.data?.items || b.das.data?.das || [];
+      const withD = list.map((a) => ({ a, d: c && typeof (a.lat ?? a.latitude) === 'number' ? haversine(c[1], c[0], a.lat ?? a.latitude, a.lng ?? a.lon ?? a.longitude) : null }))
+        .filter((x) => x.d !== null).sort((x, y) => x.d! - y.d!);
+      const near = withD.filter((x) => x.d! <= 300);
+      const big = withD.find((x) => x.d! <= 100 && /demoli|new dwelling|erect|construct/i.test(`${x.a.title || ''} ${x.a.description || ''} ${x.a.type || ''}`));
+      const n0 = withD[0];
+      out.push({ id: 'das', label: 'Development applications', status: big ? 'AMBER' : 'INFO',
+        summary: `${near.length} within 300 m${n0 ? ` · nearest ${fmtM(n0.d)}` : ''}`, endpoint: ep, level: 'property', distance_m: n0?.d ?? null,
+        detail: n0 ? `${n0.a.title || n0.a.description || 'DA'} · ${n0.a.stage || n0.a.status || '?'} · ${n0.a.date || n0.a.lodged || n0.a.lodgement_date || '?'}` : undefined });
+    } else out.push(noData('das', 'Development applications', b.das, ep, 'suburb'));
+  }
+  // 13. Council rates
+  {
+    const ep = `${S}/development/council-rates`;
+    if (b.rates?.ok) {
+      const d = b.rates.data || {};
+      out.push({ id: 'council_rates', label: 'Council rates', status: 'INFO', summary: `${fmt$(num(d.avg_rate_aud_yr))}/yr average`, endpoint: ep, level: 'suburb',
+        detail: `${d.lga || ''} council · source ${d.data_source || '?'}` });
+    } else out.push(noData('council_rates', 'Council rates', b.rates, ep, 'suburb'));
+  }
+  return out;
+}
+
 /** Info rows that exist to open the map drawer; their layers are fetched only on click. */
 function mapOnlyRows(): Row[] {
   return [
-    { id: 'planning', label: 'Planning: zone + height limit', status: 'INFO', summary: 'zoning and height-of-building controls · open the map',
-      endpoint: '/v1/suburbs/{SAL}/development/zoning-map + building-controls', level: 'suburb', verify: VERIFY },
     { id: 'roads', label: 'Busy roads + noise', status: 'INFO', summary: 'busy roads and the noise heatmap · open the map',
       endpoint: '/v1/suburbs/{SAL}/shapes/busy-roads + noise-heatmap', level: 'suburb' },
     { id: 'easements', label: 'Easements', status: 'INFO', summary: 'mapped easements within 1 km · open the map',
@@ -245,6 +399,7 @@ export function buildRows(b: Bundle): Row[] {
     hazardRow(HAZARDS[7], b.risks),
     hazardRow(HAZARDS[8], b.risks),
     transportRow(b),
+    ...v3Rows(b),
     ...mapOnlyRows()
   ];
 }
