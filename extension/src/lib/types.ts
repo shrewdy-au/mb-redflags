@@ -27,7 +27,11 @@ export interface Report {
   message?: string;
   mock?: boolean;
   asking?: number | null;
+  plain?: Plain;
 }
+
+/** Plain English view (deterministic templates). */
+export interface Plain { words: string; why: string; means: Record<string, string>; questions: string[]; pay?: string; sure: string }
 
 export interface AddressInfo {
   raw: string;

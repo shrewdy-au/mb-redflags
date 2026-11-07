@@ -25,5 +25,12 @@ for (const [addr, asking] of cases) {
   }
   console.log(`\n${addr}  [candidates: ${info.candidates.join(' | ')}]`);
   console.log(`  state=${r.state} verdict=${r.verdict ?? '-'} ${r.verdictLine ?? r.message ?? ''} mock=${!!r.mock} gnaf=${r.gnaf ? 'yes' : 'no'} label=${r.address}`);
+  if (r.plain) {
+    console.log(`  PLAIN: ${r.plain.words}. ${r.plain.why}`);
+    r.plain.questions.forEach((q, i) => console.log(`  ASK ${i + 1}: ${q}`));
+    console.log(`  PAY: ${r.plain.pay ?? '-'}`);
+    console.log(`  SURE: ${r.plain.sure}`);
+    if (process.env.PLAIN_ONLY) continue;
+  }
   for (const row of r.rows) console.log(`   ${row.status.padEnd(5)} ${row.label.padEnd(32)} ${row.summary}  [${row.level}${row.distance_m !== undefined && row.distance_m !== null ? `, ${Math.round(row.distance_m)} m` : ''}]${row.detail ? `\n         ${row.detail}` : ''}`);
 }

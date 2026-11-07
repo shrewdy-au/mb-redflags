@@ -6,6 +6,7 @@ import { hasMap } from '../lib/mapids';
 import { MAP_DRAWER } from '../lib/config';
 import { icon } from './icons';
 import { RULES, CAVEATS } from '../lib/notes';
+import { GLOSSARY } from '../lib/plain';
 
 const SERIF = `'MBRF Fraunces', Georgia, 'Times New Roman', serif`;
 const MONO = `'MBRF Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`;
@@ -54,6 +55,19 @@ button:focus-visible, input:focus-visible, summary:focus-visible { outline: 1px 
 .form input::placeholder { color: #6f6f6b; }
 .form input:focus { border-bottom-color: #e7e5df; outline: none; }
 .rows { margin-top: 14px; }
+.modes { display: inline-flex; border: 1px solid #333; border-radius: 2px; margin: 2px 0 10px; }
+.modes button { border: 0; border-radius: 0; padding: 6px 10px; color: #8a8a86; }
+.modes button[aria-pressed="true"] { background: #e7e5df; color: #161616; }
+.verdict.plain { font-size: 30px; font-weight: 600; }
+.why { font: 300 15px/1.45 ${SERIF}; color: #e7e5df; margin: 4px 0 6px; }
+.sure { font: 400 10.5px/1.5 ${MONO}; color: #8a8a86; }
+.pcard { margin: 12px 0 0; padding: 10px 12px; background: #1d1d1d; border-left: 1px solid #3a3a3a; }
+.pcard h3 { margin: 0 0 6px; font: 300 14px/1.2 ${SERIF}; color: #f2f0ea; }
+.pcard div, .pcard li { font: 400 11px/1.55 ${MONO}; color: #c9c7c1; }
+.pcard ol { margin: 0; padding-left: 18px; }
+.means { font: 300 13px/1.45 ${SERIF}; color: #e7e5df; margin-top: 4px; }
+.row.flag .means { color: #f2f0ea; }
+.gloss { color: #e7e5df; }
 .row { position: relative; }
 .rl { display: flex; gap: 10px; align-items: flex-start; padding: 8px 2px; border-radius: 2px; }
 .row.map .rl { cursor: pointer; }
@@ -165,6 +179,9 @@ export class Panel {
   private payloads = new Map<string, MapPayload>();
   private rowsById = new Map<string, Row>();
   private mode: 'stack' | 'flat' = 'stack';
+  private view: 'plain' | 'detail' = 'plain';
+  private last?: Report;
+  private plain?: Report['plain'];
   private modeBtn?: HTMLButtonElement;
   private clearBtn?: HTMLButtonElement;
   private mapSeq = 0;
@@ -313,6 +330,8 @@ export class Panel {
     if (r.status === 'RED') lab.append(handMark('underline'));
     txt.append(lab, h('div', 'sum', r.summary));
     if (r.chart) txt.append(streetChart(r.chart));
+    const meansTxt = this.view === 'plain' ? this.plain?.means[r.id] : undefined;
+    if (meansTxt) { txt.append(h('div', 'means', meansTxt)); if (r.status === 'RED' || r.status === 'AMBER') d.classList.add('flag'); }
     line.append(h('span', `dot ${r.status}`), icon(r.id), txt);
     if (mapped) {
       const m = h('button', 'ib mapb') as HTMLButtonElement;
@@ -328,6 +347,7 @@ export class Panel {
     line.append(ib);
     const note = h('div', 'note');
     const dist = r.distance_m !== undefined && r.distance_m !== null ? ` · ${Math.round(r.distance_m)} m` : '';
+    if (this.view === 'plain' && GLOSSARY[r.id]) note.append(h('div', 'gloss', GLOSSARY[r.id]));
     const ep = h('div'); ep.append(h('code', '', r.endpoint)); note.append(ep);
     note.append(h('div', '', `Level: ${r.level}${dist}`));
     if (r.detail) note.append(h('div', '', r.detail));
@@ -342,6 +362,7 @@ export class Panel {
   minimise() { this.wrap.classList.add('min'); }
 
   render(r: Report) {
+    this.last = r; this.plain = r.plain;
     this.mockTag.style.display = r.mock ? '' : 'none';
     if (r.gnaf !== this.gnaf || r.state !== 'done') { this.gnaf = r.gnaf; this.payloads.clear(); this.closeDrawer(); }
     this.rowsById = new Map(r.rows.map((x) => [x.id, x]));
@@ -349,9 +370,26 @@ export class Panel {
     const head = h('div', 'head');
     const v = r.state === 'done' && r.verdict ? r.verdict : 'NONE';
     const label = r.state === 'done' ? r.verdict || '' : r.state === 'loading' ? 'Checking…' : r.state === 'outside' ? 'Outside coverage' : r.state === 'not_found' ? 'Address not matched' : r.state === 'error' ? 'Error' : 'Ready';
-    const word = h('div', `verdict ${v}`, label);
+    const plainOn = this.view === 'plain' && r.state === 'done' && !!r.plain;
+    const word = h('div', `verdict ${v}${plainOn ? ' plain' : ''}`, plainOn ? r.plain!.words : label);
     if (v !== 'NONE') word.append(handMark('circle'));
-    head.append(word,
+    if (r.state === 'done') {
+      const modes = h('div', 'modes'); modes.setAttribute('role', 'group'); modes.setAttribute('aria-label', 'View');
+      for (const [k, t] of [['plain', 'Plain English'], ['detail', 'Detail']] as const) {
+        const bt = h('button', '', t) as HTMLButtonElement; bt.setAttribute('aria-pressed', String(this.view === k));
+        bt.onclick = () => { if (this.view !== k) { this.view = k; if (this.last) this.render(this.last); } };
+        modes.append(bt);
+      }
+      head.append(modes);
+    }
+    if (plainOn) {
+      const p = r.plain!;
+      head.append(word, h('div', 'why', p.why), h('div', 'sure', `How sure is this? ${p.sure}`));
+      const ask = h('div', 'pcard'); ask.append(h('h3', '', 'Ask the agent these'));
+      const ol = h('ol'); p.questions.forEach((q) => ol.append(h('li', '', q))); ask.append(ol);
+      head.append(ask);
+      if (p.pay) { const pc = h('div', 'pcard'); pc.append(h('h3', '', 'Would it pay for itself?'), h('div', '', p.pay)); head.append(pc); }
+    } else head.append(word,
       h('div', 'vline', r.state === 'done' ? r.verdictLine || '' : r.message || (r.state === 'idle' ? 'Type an address below.' : '')));
     this.body.append(head);
     if (r.address) {
