@@ -28,6 +28,17 @@ export interface Report {
   mock?: boolean;
   asking?: number | null;
   plain?: Plain;
+  next?: NextSteps;
+}
+
+export interface ShortItem { address: string; verdict: Verdict; reds: number; streetGap: number | null; street4: number | null; suburb4: number | null;
+  ph: number | null; yieldPct: number | null; vacancy: number | null; avmMid: number | null }
+export interface NextSteps {
+  enquire: { rec: string };
+  message: string;
+  inspect: string[];
+  short: ShortItem;
+  offer: { avmLow: number | null; avmMid: number | null; avmHigh: number | null; likelyPct: number | null; cohort: string; haircut: number; comps: number | null };
 }
 
 /** Plain English view (deterministic templates). */

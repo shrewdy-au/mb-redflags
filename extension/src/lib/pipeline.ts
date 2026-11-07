@@ -3,6 +3,7 @@ import { mbGet, settledPool, type MbResult } from './mb';
 import { buildRows, verdictOf, type Bundle } from './rules';
 import { toSal } from './coverage';
 import { plainOf } from './plain';
+import { nextStepsOf } from './nextsteps';
 import { CONCURRENCY } from './config';
 import type { AddressInfo, Report } from './types';
 
@@ -51,7 +52,8 @@ export async function resolveGnaf(a: AddressInfo): Promise<{ gnaf?: string; labe
 export function finish(r: Report, b: Bundle): Report {
   const rows = buildRows(b);
   const { verdict, line } = verdictOf(rows);
-  return { ...r, rows, verdict, verdictLine: line, state: 'done', asking: b.asking ?? null, plain: plainOf(rows, verdict, b) };
+  const plain = plainOf(rows, verdict, b);
+  return { ...r, rows, verdict, verdictLine: line, state: 'done', asking: b.asking ?? null, plain, next: nextStepsOf(rows, verdict, plain, b, r.address) };
 }
 
 /** Full run. `progress` gets the loading report; `stale` lets the caller abort if the tab moved on. */

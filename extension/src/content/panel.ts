@@ -7,6 +7,8 @@ import { MAP_DRAWER } from '../lib/config';
 import { icon } from './icons';
 import { RULES, CAVEATS } from '../lib/notes';
 import { GLOSSARY } from '../lib/plain';
+import { bestOf, ceilingOf, money, METHOD_TIPS } from '../lib/nextsteps';
+import type { ShortItem } from '../lib/types';
 
 const SERIF = `'MBRF Fraunces', Georgia, 'Times New Roman', serif`;
 const MONO = `'MBRF Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`;
@@ -68,6 +70,20 @@ button:focus-visible, input:focus-visible, summary:focus-visible { outline: 1px 
 .means { font: 300 13px/1.45 ${SERIF}; color: #e7e5df; margin-top: 4px; }
 .row.flag .means { color: #f2f0ea; }
 .gloss { color: #e7e5df; }
+.step { margin: 10px 0 0; background: #1d1d1d; border-left: 1px solid #3a3a3a; }
+.step summary { list-style: none; cursor: pointer; display: flex; gap: 10px; align-items: center; padding: 9px 12px; font: 300 15px/1.2 ${SERIF}; color: #f2f0ea; }
+.step summary::-webkit-details-marker { display: none; }
+.step .num { width: 20px; height: 20px; flex: none; border: 1.25px solid #c9c7c1; border-radius: 50%; display: grid; place-items: center; font: 400 10px/1 ${MONO}; color: #c9c7c1; }
+.step .sb { padding: 0 12px 12px 42px; font: 400 11px/1.55 ${MONO}; color: #c9c7c1; }
+.step .sb p { margin: 0 0 6px; }
+.step ul { margin: 0; padding-left: 16px; } .step li + li { margin-top: 3px; }
+.step textarea { width: 100%; height: 150px; resize: vertical; font: 400 10.5px/1.5 ${MONO}; color: #e7e5df; background: #121212; border: 1px solid #333; padding: 8px; }
+.step .acts { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+.step table { width: 100%; border-collapse: collapse; font: 400 10px/1.4 ${MONO}; }
+.step th, .step td { text-align: left; padding: 3px 4px 3px 0; vertical-align: top; } .step th { color: #8a8a86; font-weight: 400; }
+.step .pick button[aria-pressed="true"] { background: #e7e5df; color: #161616; }
+.step .ceil { font: 300 16px/1.3 ${SERIF}; color: #f2f0ea; margin: 6px 0; }
+.step input { font: 400 11px/1 ${MONO}; color: #e7e5df; background: #121212; border: 0; border-bottom: 1px solid #3a3a3a; padding: 6px 4px; width: 140px; }
 .row { position: relative; }
 .rl { display: flex; gap: 10px; align-items: flex-start; padding: 8px 2px; border-radius: 2px; }
 .row.map .rl { cursor: pointer; }
@@ -180,6 +196,10 @@ export class Panel {
   private rowsById = new Map<string, Row>();
   private mode: 'stack' | 'flat' = 'stack';
   private view: 'plain' | 'detail' = 'plain';
+  private shortlist: ShortItem[] = []; // in memory for this page only (nothing persistent)
+  private method: 'auction' | 'private' | 'eoi' = 'auction';
+  private guide: number | null = null;
+  private openStep = 1;
   private last?: Report;
   private plain?: Report['plain'];
   private modeBtn?: HTMLButtonElement;
@@ -359,6 +379,64 @@ export class Panel {
     return d;
   }
 
+  /** The five Next steps cards (Plain English mode). */
+  private steps(r: Report): HTMLElement[] {
+    const x = r.next!, p = r.plain!;
+    const card = (i: number, title: string, body: HTMLElement[]) => {
+      const d = h('details', 'step') as HTMLDetailsElement; if (this.openStep === i) d.open = true;
+      d.addEventListener('toggle', () => { if (d.open) this.openStep = i; });
+      const s = h('summary'); s.append(h('span', 'num', String(i)), h('span', '', title));
+      const sb = h('div', 'sb'); sb.append(...body); d.append(s, sb); return d;
+    };
+    const ul = (xs: string[]) => { const u = h('ul'); xs.forEach((t) => u.append(h('li', '', t))); return u; };
+    // 2. message
+    const ta = h('textarea') as HTMLTextAreaElement; ta.value = x.message; ta.setAttribute('aria-label', 'Enquiry message');
+    const copy = h('button', '', 'Copy') as HTMLButtonElement;
+    copy.onclick = () => { navigator.clipboard?.writeText(ta.value).then(() => { copy.textContent = 'Copied'; }, () => { ta.select(); }); };
+    const a2 = h('div', 'acts'); a2.append(copy);
+    // 4. shortlist
+    const tbl = h('table');
+    const hr = h('tr'); ['Address', 'Verdict', 'Street vs sub', 'PH %', 'Yield', 'Vac.', 'AVM'].forEach((t) => hr.append(h('th', '', t))); tbl.append(hr);
+    const fmt = (v: number | null, suf = '') => (v === null ? '–' : `${v}${suf}`);
+    for (const s of this.shortlist) {
+      const tr = h('tr');
+      [s.address.split(',')[0], s.verdict, s.street4 !== null ? `${s.street4}/${s.suburb4}%` : '–', fmt(s.ph, '%'), fmt(s.yieldPct, '%'), fmt(s.vacancy, '%'), s.avmMid ? `$${(s.avmMid / 1e6).toFixed(2)}m` : '–']
+        .forEach((t) => tr.append(h('td', '', t)));
+      tbl.append(tr);
+    }
+    const best = bestOf(this.shortlist);
+    const add = h('button', '', 'Add to shortlist') as HTMLButtonElement;
+    add.disabled = this.shortlist.length >= 3 || this.shortlist.some((s) => s.address === x.short.address);
+    add.onclick = () => { this.shortlist.push(x.short); this.openStep = 4; this.render(r); };
+    const clr = h('button', '', 'Clear') as HTMLButtonElement; clr.onclick = () => { this.shortlist = []; this.openStep = 4; this.render(r); };
+    const a4 = h('div', 'acts'); a4.append(add, clr);
+    const b4: HTMLElement[] = this.shortlist.length ? [tbl] : [h('p', '', 'Add up to three addresses you check to compare them side by side. Kept for this page only.')];
+    if (best && this.shortlist.length > 1) b4.push(h('p', '', `Best on paper: ${best.item.address.split(',')[0]} because ${best.reason}.`));
+    b4.push(a4);
+    // 5. offer
+    const o = x.offer;
+    const pick = h('div', 'acts pick');
+    for (const [k, t] of [['auction', 'Auction'], ['private', 'Private treaty'], ['eoi', 'EOI']] as const) {
+      const bt = h('button', '', t) as HTMLButtonElement; bt.setAttribute('aria-pressed', String(this.method === k));
+      bt.onclick = () => { this.method = k; this.openStep = 5; this.render(r); }; pick.append(bt);
+    }
+    const gi = h('input') as HTMLInputElement; gi.placeholder = "Agent's guide $ (optional)"; gi.inputMode = 'numeric'; if (this.guide) gi.value = String(this.guide);
+    gi.onchange = () => { const v = Number(gi.value.replace(/[^\d.]/g, '')); this.guide = v > 0 ? v : null; this.openStep = 5; this.render(r); };
+    const ceil = ceilingOf(o);
+    const b5: HTMLElement[] = [pick, gi,
+      h('p', '', `Microburbs estimate: ${money(o.avmLow)} – ${money(o.avmHigh)} (mid ${money(o.avmMid)}).`)];
+    if (o.likelyPct !== null) b5.push(h('p', '', `This agency (${o.cohort || 'cohort n/a'}) sells about ${o.likelyPct}% above its guide${this.guide ? `: likely sale ≈ ${money(this.guide * (1 + o.likelyPct / 100))}` : ': likely sale ≈ guide × ' + (1 + o.likelyPct / 100).toFixed(2)}.`));
+    if (ceil !== null) b5.push(h('div', 'ceil', `Your ceiling: ${money(Math.round(ceil / 1000) * 1000)}`), h('p', '', `Your call; set it before ${this.method === 'auction' ? 'auction day' : 'you offer'}. AVM high less ${o.haircut}% for ${x.short.reds} red flag${x.short.reds === 1 ? '' : 's'}.`));
+    b5.push(h('p', '', METHOD_TIPS[this.method]), h('p', '', 'Look on the ad for: auction date and terms, a "make an offer" form, the price guide document, the contract download.'));
+    return [
+      card(1, 'Enquire or not?', [h('p', '', x.enquire.rec)]),
+      card(2, 'Ask on the enquiry form', [ta, a2]),
+      card(3, 'At the inspection, look for', [ul(x.inspect)]),
+      card(4, 'Compare with other options', b4),
+      card(5, 'How much to offer', b5)
+    ];
+  }
+
   minimise() { this.wrap.classList.add('min'); }
 
   render(r: Report) {
@@ -385,10 +463,7 @@ export class Panel {
     if (plainOn) {
       const p = r.plain!;
       head.append(word, h('div', 'why', p.why), h('div', 'sure', `How sure is this? ${p.sure}`));
-      const ask = h('div', 'pcard'); ask.append(h('h3', '', 'Ask the agent these'));
-      const ol = h('ol'); p.questions.forEach((q) => ol.append(h('li', '', q))); ask.append(ol);
-      head.append(ask);
-      if (p.pay) { const pc = h('div', 'pcard'); pc.append(h('h3', '', 'Would it pay for itself?'), h('div', '', p.pay)); head.append(pc); }
+      if (r.next) head.append(...this.steps(r));
     } else head.append(word,
       h('div', 'vline', r.state === 'done' ? r.verdictLine || '' : r.message || (r.state === 'idle' ? 'Type an address below.' : '')));
     this.body.append(head);
