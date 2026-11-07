@@ -64,3 +64,6 @@ export interface MapPayload {
   empty?: string;         // "No mapped flood within 1 km"
   error?: string;
 }
+
+/** content -> drawer: the whole current selection. mode 'stack' floats 2+ layers as slabs. */
+export interface MapSet { type: 'MBRF_SET'; payloads: MapPayload[]; mode: 'stack' | 'flat' }

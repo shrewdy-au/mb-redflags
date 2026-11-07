@@ -30,3 +30,9 @@ html, body { margin: 0; height: 100%; background: var(--ground); color: var(--in
 @keyframes draw { to { stroke-dashoffset: 0; } }
 .maplibregl-ctrl-attrib, .maplibregl-ctrl-logo { display: none !important; }
 @media (prefers-reduced-motion: reduce) { .subject path { animation: none; stroke-dashoffset: 0; } }
+#tabs { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.slabtab { position: absolute; white-space: nowrap; transform: translateY(-50%); font: 400 10px/1 var(--mono); letter-spacing: .06em; color: var(--ink);
+  background: rgba(16,16,16,.82); border-left: 3px solid #888; padding: 4px 7px; opacity: 0; }
+#legend .grp { display: flex; align-items: center; gap: 7px; margin: 7px 0 2px; font: 300 13px/1.2 var(--serif); color: var(--ink); cursor: pointer; }
+#legend .grp input { accent-color: #e7e5df; margin: 0; width: 12px; height: 12px; }
+#legend { max-height: calc(100% - 70px); overflow: auto; }

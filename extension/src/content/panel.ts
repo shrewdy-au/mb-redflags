@@ -1,7 +1,7 @@
 // Shadow-DOM side panel in Jake's "Hand & Machine" look. All rendering uses textContent (no innerHTML with data).
 // Dark ground + grain, Fraunces for the verdict and headings, JetBrains Mono for every number and label,
 // signal red #ff3131 only for the hand's marks (circle round the verdict, underline on red rows).
-import type { MapPayload, Report, Row, Status } from '../lib/types';
+import type { MapPayload, MapSet, Report, Row, Status } from '../lib/types';
 import { hasMap } from '../lib/mapids';
 import { MAP_DRAWER } from '../lib/config';
 
@@ -64,7 +64,9 @@ button:focus-visible, input:focus-visible, summary:focus-visible { outline: 1px 
 .lab svg { position: absolute; left: -2px; bottom: -6px; width: calc(100% + 6px); height: 9px; overflow: visible; }
 .sum { font: 400 11.5px/1.45 ${MONO}; color: #b9b7b1; margin-top: 3px; }
 .lvl { font: 400 9.5px/1.3 ${MONO}; letter-spacing: .12em; text-transform: uppercase; color: #77776f; margin-top: 3px; }
-.maptag { flex: none; font: 400 9.5px/1 ${MONO}; letter-spacing: .14em; color: #8a8a86; border: 1px solid #333; padding: 4px 5px; margin-top: 2px; }
+.maptag { flex: none; display: inline-flex; align-items: center; gap: 5px; font: 400 9.5px/1 ${MONO}; letter-spacing: .14em; color: #8a8a86; border: 1px solid #333; padding: 4px 5px; margin-top: 2px; }
+.maptag::before { content: ''; width: 8px; height: 8px; border: 1px solid currentColor; box-sizing: border-box; }
+.row.active .maptag::before { background: #161616; box-shadow: inset 0 0 0 1.5px #e7e5df; }
 .row.active .maptag { color: #161616; background: #e7e5df; border-color: #e7e5df; }
 .more { padding: 0 2px 10px 19px; font: 400 11px/1.5 ${MONO}; color: #a3a19b; }
 .more div { margin-top: 3px; }
@@ -81,6 +83,7 @@ button:focus-visible, input:focus-visible, summary:focus-visible { outline: 1px 
 .drawer.open { clip-path: inset(0 0 0 0); opacity: 1; pointer-events: auto; }
 .dtop { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-bottom: 1px solid #2a2a2a; }
 .dtitle { font: 300 16px/1.2 ${SERIF}; color: #f2f0ea; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dtop button { padding: 5px 7px; }
 .dstate { font: 400 10px/1 ${MONO}; letter-spacing: .12em; text-transform: uppercase; color: #8a8a86; white-space: nowrap; }
 .drawer iframe { flex: 1; width: 100%; border: 0; display: block; background: #161616; }
 
@@ -126,8 +129,13 @@ export class Panel {
   private dState?: HTMLElement;
   private frame?: HTMLIFrameElement;
   private frameReady = false;
-  private pending?: MapPayload;
-  private openRow: string | null = null;
+  private pending?: MapSet;
+  private selected: string[] = [];
+  private payloads = new Map<string, MapPayload>();
+  private rowsById = new Map<string, Row>();
+  private mode: 'stack' | 'flat' = 'stack';
+  private modeBtn?: HTMLButtonElement;
+  private clearBtn?: HTMLButtonElement;
   private mapSeq = 0;
   private gnaf?: string;
 
@@ -157,24 +165,31 @@ export class Panel {
     if (MAP_DRAWER && handlers.onMap) this.buildDrawer();
   }
 
-  // ---------- map drawer ----------
+  // ---------- map drawer (multi-select: each MAP row is a toggle; 2+ rows stack as floating slabs) ----------
   private buildDrawer() {
     const d = h('div', 'drawer');
     d.setAttribute('role', 'dialog'); d.setAttribute('aria-label', 'Map');
     const top = h('div', 'dtop');
     this.dTitle = h('div', 'dtitle', 'Map');
     this.dState = h('div', 'dstate', '');
-    const close = h('button', '', 'Close ✕') as HTMLButtonElement;
+    this.modeBtn = h('button', 'mode', 'Flat') as HTMLButtonElement;
+    this.modeBtn.title = 'Switch between stacked slabs and a flat map';
+    this.modeBtn.onclick = () => { this.mode = this.mode === 'stack' ? 'flat' : 'stack'; this.sync(); };
+    this.clearBtn = h('button', '', 'Clear all') as HTMLButtonElement;
+    this.clearBtn.onclick = () => this.closeDrawer();
+    const close = h('button', '', '✕') as HTMLButtonElement;
+    close.title = 'Close the map'; close.setAttribute('aria-label', 'Close the map');
     close.onclick = () => this.closeDrawer();
-    top.append(this.dTitle, h('span', 'sp'), this.dState, close);
+    top.append(this.dTitle, h('span', 'sp'), this.dState, this.modeBtn, this.clearBtn, close);
     d.append(top);
     this.drawer = d;
     this.root.appendChild(d);
     window.addEventListener('message', (e) => {
       if (!this.frame || e.source !== this.frame.contentWindow) return;
       if (e.data?.type === 'MBRF_READY') { this.frameReady = true; this.flush(); }
+      if (e.data?.type === 'MBRF_TOGGLE' && typeof e.data.rowId === 'string') this.toggle(e.data.rowId);
     });
-    window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && this.openRow) this.closeDrawer(); });
+    window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && this.selected.length) this.closeDrawer(); });
     // Keep the drawer the same height as the panel.
     const sync = () => { if (this.drawer) this.drawer.style.height = `${Math.max(this.wrap.offsetHeight, 460)}px`; };
     new ResizeObserver(sync).observe(this.wrap);
@@ -186,7 +201,6 @@ export class Panel {
     const f = document.createElement('iframe');
     f.src = chrome.runtime.getURL('drawer/drawer.html');
     f.title = 'Map';
-    f.setAttribute('allow', '');
     this.frame = f;
     this.drawer.append(f);
   }
@@ -197,32 +211,54 @@ export class Panel {
     this.pending = undefined;
   }
 
-  private async openDrawer(row: Row) {
+  private toggle(rowId: string) {
+    if (!hasMap(rowId)) return;
+    const i = this.selected.indexOf(rowId);
+    if (i >= 0) this.selected.splice(i, 1); else this.selected.push(rowId);
+    this.sync();
+  }
+
+  /** Fetch any missing payloads (cached per address here and in the worker) and post the whole selection. */
+  private async sync() {
     if (!this.drawer || !this.handlers.onMap) return;
-    this.ensureFrame();
-    this.openRow = row.id;
     this.markActive();
-    const seq = ++this.mapSeq;
-    this.dTitle!.textContent = row.label;
-    this.dState!.textContent = 'Loading…';
+    if (!this.selected.length) { this.closeDrawer(); return; }
+    this.ensureFrame();
+    const n = this.selected.length;
+    this.dTitle!.textContent = n === 1 ? (this.rowsById.get(this.selected[0])?.label || 'Map') : `${n} rows`;
+    this.modeBtn!.style.display = n > 1 ? '' : 'none';
+    this.modeBtn!.textContent = this.mode === 'stack' ? 'Flat' : 'Stack';
     this.drawer.classList.add('open');
-    let payload: MapPayload;
-    try { payload = await this.handlers.onMap(row.id); }
-    catch (e) { payload = { type: 'MBRF_MAP', rowId: row.id, title: row.label, sub: '', center: null, address: '', layers: [], legend: [], error: String((e as Error)?.message || e) }; }
-    if (seq !== this.mapSeq || this.openRow !== row.id) return;
-    this.dState!.textContent = payload.error ? 'Error' : payload.empty ? 'No layer' : `${payload.layers.reduce((n, l) => n + (l.data?.features?.length || 0), 0)} features`;
-    this.pending = payload;
+    const seq = ++this.mapSeq;
+    const want = [...this.selected];
+    if (want.some((id) => !this.payloads.has(id))) this.dState!.textContent = 'Loading…';
+    await Promise.all(want.filter((id) => !this.payloads.has(id)).map(async (id) => {
+      let p: MapPayload;
+      try { p = await this.handlers.onMap!(id); }
+      catch (e) { p = { type: 'MBRF_MAP', rowId: id, title: this.rowsById.get(id)?.label || id, sub: '', center: null, address: '', layers: [], legend: [], error: String((e as Error)?.message || e) }; }
+      this.payloads.set(id, p);
+    }));
+    if (seq !== this.mapSeq) return;
+    const payloads = want.map((id) => this.payloads.get(id)!).filter(Boolean);
+    const feats = payloads.reduce((t, p) => t + p.layers.reduce((n, l) => n + (l.data?.features?.length || 0), 0), 0);
+    this.dState!.textContent = `${feats} features`;
+    this.pending = { type: 'MBRF_SET', payloads, mode: n > 1 ? this.mode : 'flat' };
     this.flush();
   }
 
   closeDrawer() {
-    this.openRow = null; this.mapSeq++;
+    this.selected = []; this.mapSeq++;
     this.drawer?.classList.remove('open');
+    if (this.frameReady) { this.pending = { type: 'MBRF_SET', payloads: [], mode: 'flat' }; this.flush(); }
     this.markActive();
   }
 
   private markActive() {
-    this.body.querySelectorAll('.row').forEach((el) => el.classList.toggle('active', (el as HTMLElement).dataset.id === this.openRow));
+    this.body.querySelectorAll('.row').forEach((el) => {
+      const on = this.selected.includes((el as HTMLElement).dataset.id || '');
+      el.classList.toggle('active', on);
+      const tag = el.querySelector('.maptag'); if (tag) { tag.setAttribute('aria-checked', String(on)); }
+    });
   }
 
   // ---------- panel ----------
@@ -252,7 +288,11 @@ export class Panel {
     const dist = r.distance_m !== undefined && r.distance_m !== null ? ` · ${Math.round(r.distance_m)} m` : '';
     txt.append(lab, h('div', 'sum', r.summary), h('div', 'lvl', `${r.level}${dist}`));
     s.append(h('span', `dot ${r.status}`), txt);
-    if (mapped) { const t = h('span', 'maptag', 'MAP'); t.title = 'Open the map'; s.append(t); }
+    if (mapped) {
+      const t = h('span', 'maptag', 'MAP'); t.title = 'Add this layer to the map (tick several to stack them)';
+      t.setAttribute('role', 'checkbox'); t.setAttribute('aria-checked', 'false');
+      s.append(t);
+    }
     const more = h('div', 'more');
     const ep = h('div'); ep.append('Endpoint ', h('code', '', r.endpoint)); more.append(ep);
     more.append(h('div', '', `Level ${r.level}${dist}`));
@@ -261,7 +301,7 @@ export class Panel {
     d.append(s, more);
     if (mapped) {
       s.addEventListener('click', () => {
-        if (this.openRow === r.id) { this.closeDrawer(); } else { this.openDrawer(r); }
+        this.toggle(r.id);
       });
     }
     return d;
@@ -271,7 +311,8 @@ export class Panel {
 
   render(r: Report) {
     this.mockTag.style.display = r.mock ? '' : 'none';
-    if (r.gnaf !== this.gnaf || r.state !== 'done') { this.gnaf = r.gnaf; this.closeDrawer(); }
+    if (r.gnaf !== this.gnaf || r.state !== 'done') { this.gnaf = r.gnaf; this.payloads.clear(); this.closeDrawer(); }
+    this.rowsById = new Map(r.rows.map((x) => [x.id, x]));
     this.body.replaceChildren();
     const head = h('div', 'head');
     const v = r.state === 'done' && r.verdict ? r.verdict : 'NONE';
