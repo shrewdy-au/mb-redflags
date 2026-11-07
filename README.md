@@ -5,7 +5,7 @@
 ## What we built
 | Task | Deliverable | Where |
 |---|---|---|
-| Task 1 | Reel: **"Waterloo: 749 public homes out, 3,000 in"** (39.0 s), with a pitch video (44.6 s) | [`/demo.mp4`](demo.mp4), [`/pitch.mp4`](pitch.mp4) |
+| Task 1 | Reel: **"Waterloo: 749 public homes out, 3,000 in"** (43.5 s, Hand & Machine documentary cut: 9News footage, two real soundbites, the recreated ABC page, five Microburbs map shots), with a pitch video (44.6 s) | [`/demo.mp4`](demo.mp4), [`/pitch.mp4`](pitch.mp4) |
 | Task 1 | Second post: **"Zetland: Randwick objected, the City backed it"** (40.9 s) | [`/task1a/demo.mp4`](task1a/demo.mp4) |
 | Task 3 | **MB Red Flags**: a GO / INVESTIGATE / NO-GO side panel for City of Sydney listings on realestate.com.au and domain.com.au | [`/extension`](extension), [`/proxy`](proxy) |
 
@@ -148,3 +148,37 @@ Other scripts:
 - Fonts: Fraunces and JetBrains Mono, SIL Open Font License. Maps: MapLibre GL JS (BSD-3-Clause).
 - Extension address selectors adapted from MOGL's own listing-scraper extension.
 - Code: MIT. Decision support and journalism, not financial or legal advice.
+
+### Reel 1B, Hand & Machine cut: footage and article sources
+
+Additions to the figure → source table for `demo.mp4` (H&M version). The Microburbs map figures are unchanged from the flat reel.
+
+#### Footage (news excerpts, fair dealing for reporting news, Copyright Act s103B; each excerpt 6 s or less, credited on screen)
+
+| On screen | What | Source |
+|---|---|---|
+| 0:00–2.9 s, "NO DEMOLITIONS" march, fencing | 9News report on the Waterloo protest camp, June 2026 | 9News, via "Save Waterloo encampment day 17 prime time news reports", Action for Public Housing (YouTube, uploaded 11 Jun 2026), https://www.youtube.com/watch?v=UCqE4ptlAY4 (excerpt 1:00–1:06) |
+| ~4.5–6.6 s, the estate behind the fence | 9News b-roll of the Waterloo South walk-ups and fencing | same video, 1:06–1:12 |
+| ~6.6–12.4 s, police at the fence, then soundbite | Collin Cox, Waterloo resident: "We've got to go through whatever these people are going through, we've got to be next." (YouTube auto-captions read "We're going to be next.") | same video, 1:36–1:42 (9News) |
+| ~15–21 s, soundbite | Rebecca Pinkstone, Homes NSW (name from the 9News super): "We're transforming 750 homes into 3,300 new homes." | same video, 1:06–1:12 (9News) |
+| ~28.6–32.7 s, under the news page | 9News studio open, "Housing standoff" | same video, 0:28–0:34 |
+
+#### Recreated article (text verbatim, layout our own)
+
+| On screen | Source |
+|---|---|
+| Headline "Housing minister says Waterloo community 'not functional' as demolition looms for public housing estate", Rose Jackson's quote ("...they're not functional communities"), three paragraphs and Julie's line | ABC News, Declan Bowring, 25 May 2026, https://www.abc.net.au/news/2026-05-25/waterloo-public-housing-estate-fenced-off-ahead-of-demolition/106718016 |
+
+#### Figures on new plates
+
+| Figure | Source |
+|---|---|
+| Fenced 25 May 2026, block of ~150 homes | ABC News, 25 May 2026 (above) |
+| Protest camp cleared, June 2026 | ABC News, 19 Jun 2026, https://www.abc.net.au/news/2026-06-19/arrest-police-clear-waterloo-public-housing-demolition-protest/106817688 |
+| Waterloo 20.2% public housing; highest SA1 82.7% | Microburbs API, shapes/public-housing-sa1 and demographics/tenure, 2021 Census |
+| Renters 69.5% of households | Microburbs API, demographics/tenure, 2021 Census |
+| Mix ~50% private / ~20% affordable / ~30% social | ABC News, 25 May 2026 |
+| +150 to +250 net new social homes | Arithmetic: 30% × 3,000–3,300 − 749 |
+| Height controls in force 28 Feb 2023 | NSW Planning Portal, Waterloo Estate (South) finalisation, https://www.planningportal.nsw.gov.au/ppr/finalisation/waterloo-estate-south |
+
+Maps: Microburbs data · © OpenStreetMap contributors, OpenMapTiles, OpenFreeMap.
