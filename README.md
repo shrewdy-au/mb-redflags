@@ -5,8 +5,8 @@
 ## What we built
 | Task | Deliverable | Where |
 |---|---|---|
-| Task 1 | Reel: **"Waterloo: 749 public homes out, 3,000 in"**, with a pitch video | [`/demo.mp4`](demo.mp4), [`/pitch.mp4`](pitch.mp4) |
-| Task 1 | Second post: **"Zetland: Randwick objected, the City backed it"** | [`/task1a/demo.mp4`](task1a/demo.mp4) |
+| Task 1 | Reel: **"Waterloo: 749 public homes out, 3,000 in"** (39.0 s), with a pitch video (44.6 s) | [`/demo.mp4`](demo.mp4), [`/pitch.mp4`](pitch.mp4) |
+| Task 1 | Second post: **"Zetland: Randwick objected, the City backed it"** (40.9 s) | [`/task1a/demo.mp4`](task1a/demo.mp4) |
 | Task 3 | **MB Red Flags**: a GO / INVESTIGATE / NO-GO side panel for City of Sydney listings on realestate.com.au and domain.com.au | [`/extension`](extension), [`/proxy`](proxy) |
 
 Full write-up (data, method, what worked, held-out checks, competitors): [`report.html`](report.html).
@@ -20,6 +20,7 @@ Full write-up (data, method, what worked, held-out checks, competitors): [`repor
 - `GET /v1/geocode/address`
 - `GET /v1/properties/{gnaf}/profile`, `/risks/all`, `/surroundings/public-housing`, `/street/profile`, `/valuation/avm`, `/valuation/agent-quoting`, `/transport/nearby`
 - `GET /v1/suburbs/{SAL}/risks/extras`, `/risks/property-hazard-counts`
+- Map drawer, on click only: `GET /v1/properties/{gnaf}/risks/all?geojson=true`; `GET /v1/suburbs/{SAL}/shapes/hazards`, `/shapes/public-housing-sa1`, `/shapes/noise-heatmap`, `/shapes/busy-roads`, `/shapes/easements` (all `?geojson=true`), `/development/zoning-map`, `/development/building-controls`
 - `GET /v1/suburbs/{SAL}/listings/for-sale`, `/properties`, `/demographics/tenure` (demo listing pick, held-out check and reels)
 
 Also:
@@ -31,14 +32,35 @@ Also:
 The repo holds no API keys, no API output and no supplied CSV rows. `fixtures/synthetic/` is hand-written JSON shaped like the OpenAPI examples, with invented values.
 
 ## Sources for every figure
-<!-- Filled from the reel agents' claim lists. One line per on-screen figure: figure, where it appears, source, URL, date accessed. -->
-- [ ] Waterloo reel: 749 public homes … (source: ABC News, URL TBC)
-- [ ] Waterloo reel: ~3,000 / 3,300 new homes … (source TBC)
-- [ ] Waterloo reel: public-housing share (Microburbs `demographics/tenure`, 2021 Census)
-- [ ] Zetland reel: Randwick Council objection … (source TBC)
-- [ ] Zetland reel: City of Sydney support … (source TBC)
-- [ ] Zetland reel: Little Bay figures (Microburbs national API, licensed to MOGL)
-- [ ] _add remaining figures_
+
+### Reel 1B — Waterloo (demo.mp4)
+- 749 public homes out; about 3,000–3,300 homes in: ABC News, 25 May 2026 (https://www.abc.net.au/news/2026-05-25/waterloo-public-housing-estate-fenced-off-ahead-of-demolition/106718016); NSW Planning Waterloo South page; Major Projects listing SSD-93222706.
+- First block of ~150 homes fenced, May 2026: ABC News, 25 May 2026 (as above).
+- Protest camp cleared in June 2026, one arrest: ABC News, 19 Jun 2026 (https://www.abc.net.au/news/2026-06-19/arrest-police-clear-waterloo-public-housing-demolition-protest/106817688).
+- About 50% private, 20% affordable, 30% social delivered by community housing providers: ABC News, 25 May 2026.
+- Rose Jackson, "not functional communities": ABC News, 25 May 2026 (said of large old estates in general).
+- +150 to +250 net social homes: our arithmetic, 30% × 3,000–3,300 − 749.
+- Height controls in force since 28 Feb 2023 (Sydney LEP 2012); concept SSDA decision due late 2026: NSW Planning Portal, Waterloo Estate (South) finalisation (https://www.planningportal.nsw.gov.au/ppr/finalisation/waterloo-estate-south).
+- 20.2% public housing, 69.5% renting, 27.4% owner-occupied (2021 Census): Microburbs API, /v1/suburbs/Waterloo (NSW)/demographics/tenure.
+- Public-housing share by SA1, 1.6%–82.7%, 9 of 14 SA1s above 50% (2021 Census): Microburbs API, shapes/public-housing-sa1.
+- Renters by mesh block, 53.9%–84.6% across 84 mesh blocks: Microburbs API, demographics/tenure (per-microburb renting_pct) joined to shapes/mesh-blocks.
+- Map layers: development/zoning-map; development/building-controls (HOB 3–117 m); development/applications (100 of 149); shapes/boundary.
+
+### Reel 1A — Zetland (task1a/demo.mp4)
+- 27-storey tower, 230 + 72 = 302 apartments, 28 townhouses (DA D/2024/816, 905 South Dowling St, lodged 8 Oct 2024): Microburbs API, /v1/suburbs/Zetland/development/applications.
+- Former Suttons Holden site, 118–130 Epsom Rd / 905 South Dowling St, Meriton (Harry Triguboff): The Urban Developer (https://www.theurbandeveloper.com/articles/meriton-zetland-epsom-road-masterplan-apartments-nsw).
+- Randwick Council unanimous vote asking the City of Sydney to reject the plan, June 2023: ABC News, 8 Jun 2023 (https://www.abc.net.au/news/2023-06-08/nsw-government-tested-by-proposed-meriton-development-zetland/102405572).
+- City of Sydney councillors in favour, all but one: Green Street News (https://greenstreetnews.com/?p=598240).
+- Up to 90 m on part of the site, FSR unchanged, LEP amended 1 May 2024 (PP-2022-2530): NSW Planning Portal LEP decision (https://www.planningportal.nsw.gov.au/ppr/lep-decision/118-130-epsom-road-and-905-south-dowling-street-zetland-sydney-lep-2012-amendment).
+- Zetland height limits (25–45 m at the site) and zoning: Microburbs API, development/building-controls and development/zoning-map.
+- Little Bay height limits 8–18 m: Microburbs national API (MOGL's own licensed key), development/building-controls, suburb Little Bay. Shown as "outside the hackathon dataset".
+- Little Bay: earlier schemes of ~2,600 apartments in two 27-storey towers rejected, including by the Housing Delivery Authority in 2025; HDA recommended 505 homes at 2–5 storeys on 29 Oct 2026: The Urban Developer (https://www.theurbandeveloper.com/articles/meriton-harry-triguboff-little-bay-sydney-nsw-ssd-approval).
+- "I bought my first place here in 2008, Gadigal Avenue": Jake Milne, owner 2008–. Victoria Park history (racecourse 1908–1944, motor racing, later car factory, housing from the 1990s): Dictionary of Sydney (https://dictionaryofsydney.org/node/6299); Wikipedia, Victoria Park Racecourse, Sydney.
+
+### Maps and media
+- Vector tiles: OpenFreeMap (https://openfreemap.org), OpenMapTiles schema, data © OpenStreetMap contributors (ODbL).
+- Voice: Jake Milne's own cloned ElevenLabs voice.
+- Property verdicts in the extension demo: Microburbs hackathon API, live on 7 Nov 2026.
 
 ## The key step
 **Task 1 (reels):** every number on screen is tied to a named source, and the "before" is drawn from the API rather than asserted: the public-housing layer and the suburb tenure share put the estate on the map before the script says what is planned. The 749 / 3,300 figures were cross-checked against the ABC article and against the API's tenure share for Waterloo.
@@ -74,6 +96,27 @@ Any RED → **NO-GO** (investigate before making an offer), any AMBER → **INVE
 ### Held-out check (extension)
 `node scripts/holdout-sa1.mjs` (no CSVs needed) compares the extension's SA1 public-housing flag with the 2021 Census mesh-block share (`demographics/tenure`) and the 200 m flagged share for 10 addresses in each of 5 suburbs. It writes aggregate counts, precision, recall and correlation only to `out/holdout.json` (gitignored). Results are in `report.html`. With the supplied CSVs, `node scripts/holdout.mjs <public-housing.csv> <addresses.csv>` runs the CSV-based check.
 
+## Hand & Machine UI and the map drawer (extension)
+**Look.** The panel uses MOGL's "Hand & Machine" system from the doc reels: a near-black ground (#161616) with a faint film grain (an inline SVG `feTurbulence` noise at 7% opacity), Fraunces for the verdict, address and row names, JetBrains Mono for every number, label and the input boxes, and thin hairlines instead of cards. Signal red (#ff3131) is kept for the hand's marks: a hand-drawn circle round the verdict, an underline under each red row's name, and the red pen circle on the map. NO-GO is red, INVESTIGATE amber, GO a muted green. The top bar carries the "MOGL · Microburbs data" lockup. Fonts are bundled in `extension/assets/fonts/` (Fraunces, JetBrains Mono; SIL OFL) and injected as `@font-face` in the page head through `chrome.runtime.getURL`, because a shadow root can't declare font faces; Georgia and `ui-monospace` are the fallbacks. Motion (pen strokes drawing on, the drawer slide, the map orbit) is switched off under `prefers-reduced-motion`.
+
+**Map drawer.** Rows tagged `MAP` open a 520 px drawer that slides out of the panel's left edge, the same height as the panel. One drawer at a time; clicking the same row (or Close, or Esc) shuts it. The drawer is an extension page (`extension/src/drawer/drawer.html`, listed in `web_accessible_resources`) in an iframe, so the listing site's CSP can't block it. It runs MapLibre GL JS from npm (the CSP build, with its worker shipped as a file, because MV3 pages can't start `blob:` workers) on OpenFreeMap vector tiles, styled after the reel renderer's `layers` mode: dark, desaturated, OSM buildings extruded, pitch 55°, a slow orbit until you drag, a legend card top left, and the subject marked with a red hand-drawn circle.
+
+| Row | Layer | Source |
+|---|---|---|
+| Flood, historical flood, bushfire, heritage, landslide, erosion, contamination | hatched translucent fill, dashed edge | `risks/all?geojson=true` (1 km clip), else `shapes/hazards?layer=` (suburb, trimmed to 1 km) |
+| HV power line | card only: Microburbs returns a count and distance but no geometry for this layer | `risks/all` |
+| Public housing (area share, within 200 m) | SA1 choropleth + the flagged homes within 200 m as dots | `shapes/public-housing-sa1` + `surroundings/public-housing` |
+| Planning: zone + height limit (new info row) | zoning fills by the feature's colour, height-of-building limits as cyan extrusions with a lighter ceiling, a card with the zone, height limit and FSR at the address | `development/zoning-map` + `development/building-controls` |
+| Aircraft noise, Busy roads + noise (new info row) | noise heatmap + busy roads with a dark halo | `shapes/noise-heatmap` + `shapes/busy-roads` |
+| Easements (new info row) | hatched fill | `shapes/easements` |
+| Street growth forecast | the property marker and a rank card (no street geometry in the API) | `street/profile` (already fetched) |
+
+**How layers are fetched.** Only on click. The content script asks the service worker (`MAP` message); the worker calls the proxy, trims suburb layers to about 1 km round the property, and returns GeoJSON plus legend; the content script posts it into the iframe. The key never leaves the proxy. Responses are cached in memory per tab and dropped on the next address, so opening every hazard row costs one `risks/all?geojson=true` call; a full click-through of every row costs 7 calls. Property position comes from `transport/nearby` (`center_lat`/`center_lng`), falling back to the address's own record in `surroundings/public-housing`. Empty layers show "No mapped {layer} within 1 km". `MAP_DRAWER` in `extension/src/lib/config.ts` turns the drawer off.
+
+**Checks.** `node scripts/smoke-map.mjs "14 Raglan Street, Waterloo NSW 2017"` builds every row's payload against the proxy and writes them to `out/maps/` (gitignored). The drawer was screenshotted headless with a synthetic flood layer and with live planning and public-housing payloads.
+
+**Map credits.** Map: © OpenStreetMap contributors, OpenMapTiles, OpenFreeMap · Data: Microburbs (shown on the map). MapLibre GL JS (BSD-3-Clause).
+
 ## How to run (extension)
 ```bash
 npm install
@@ -89,9 +132,10 @@ Other scripts:
 - `npm run dev`: mock proxy + rebuild on change
 - `npm run typecheck`
 - `node scripts/smoke.mjs`: built-in cases (mock). `node scripts/smoke.mjs "34 Corben Street, Surry Hills NSW 2010|1550000"`: live, prints every row with level and distance
+- `node scripts/smoke-map.mjs`: builds every map-drawer payload against the proxy
 - `node scripts/holdout-sa1.mjs`, `node scripts/holdout.mjs`: held-out checks (aggregates only)
 
-**Key handling:** the key lives only in `proxy/.env` (gitignored). The proxy binds to 127.0.0.1, allows only the endpoints above, rate-limits to 8 req/s, honours 429 `Retry-After`, sends `Cache-Control: no-store`, requires the shared `X-Ext-Token` header and rejects any browser `Origin` that isn't `chrome-extension://`. The extension keeps API data in memory per tab only.
+**Key handling:** the key lives only in `proxy/.env` (gitignored). The proxy binds to 127.0.0.1, allows only the endpoints above (including the drawer's map layers), rate-limits to 8 req/s, honours 429 `Retry-After`, sends `Cache-Control: no-store`, requires the shared `X-Ext-Token` header and rejects any browser `Origin` that isn't `chrome-extension://`. The extension keeps API data in memory per tab only.
 
 ## Credits and licences
 - Data: **Microburbs** (microburbs.com.au), hackathon API; national API used under MOGL's licence for the Little Bay figures.
@@ -99,5 +143,6 @@ Other scripts:
 - Map data © OpenStreetMap contributors, available under the Open Database Licence (ODbL). Tiles by OpenFreeMap; schema by OpenMapTiles.
 - Terrain: © Commonwealth of Australia (Geoscience Australia), CC BY 4.0.
 - News and planning sources: ABC News, NSW Planning Portal, The Urban Developer (cited per figure above; quoted only as facts with attribution).
+- Fonts: Fraunces and JetBrains Mono, SIL Open Font License. Maps: MapLibre GL JS (BSD-3-Clause).
 - Extension address selectors adapted from MOGL's own listing-scraper extension.
 - Code: MIT. Decision support and journalism, not financial or legal advice.

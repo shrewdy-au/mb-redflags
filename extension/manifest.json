@@ -4,13 +4,17 @@
   "short_name": "MB Red Flags",
   "description": "First-pass buyer's-agent red flags from Microburbs for the listing you are viewing. Decision support, not advice.",
   "version": "0.1.0",
-  "permissions": ["storage", "activeTab"],
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
   "host_permissions": [
     "https://www.realestate.com.au/*",
     "https://realestate.com.au/*",
     "https://www.domain.com.au/*",
     "https://domain.com.au/*",
-    "http://127.0.0.1:8787/*"
+    "http://127.0.0.1:8787/*",
+    "https://tiles.openfreemap.org/*"
   ],
   "background": {
     "service_worker": "background.js",
@@ -24,8 +28,28 @@
         "https://www.domain.com.au/*",
         "https://domain.com.au/*"
       ],
-      "js": ["content.js"],
+      "js": [
+        "content.js"
+      ],
       "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "drawer/drawer.html",
+        "drawer/drawer.js",
+        "drawer/drawer.css",
+        "drawer/drawer.page.css",
+        "drawer/maplibre-worker.js",
+        "fonts/*.woff2"
+      ],
+      "matches": [
+        "https://www.realestate.com.au/*",
+        "https://realestate.com.au/*",
+        "https://www.domain.com.au/*",
+        "https://domain.com.au/*"
+      ]
     }
   ]
 }

@@ -1,0 +1,32 @@
+@font-face { font-family: 'MBRF Fraunces'; font-weight: 300 500; src: url(../fonts/fraunces-300-latin.woff2) format('woff2'); }
+@font-face { font-family: 'MBRF Mono'; font-weight: 100 800; src: url(../fonts/jetbrains-mono-latin.woff2) format('woff2'); }
+:root { --ground: #161616; --ink: #e7e5df; --dim: #8a8a86; --red: #ff3131;
+  --serif: 'MBRF Fraunces', Georgia, serif; --mono: 'MBRF Mono', ui-monospace, Menlo, monospace; }
+html, body { margin: 0; height: 100%; background: var(--ground); color: var(--ink); overflow: hidden; }
+#map { position: absolute; inset: 0; }
+#grain { position: absolute; inset: 0; pointer-events: none; opacity: .09; mix-blend-mode: screen;
+  background-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  box-shadow: inset 0 0 120px rgba(0,0,0,.65); }
+.card { position: absolute; background: rgba(16,16,16,.86); border: 1px solid #2e2e2e; border-radius: 2px; padding: 10px 12px; backdrop-filter: blur(3px); }
+#legend { top: 12px; left: 12px; max-width: 300px; }
+#legend h1 { font: 300 17px/1.15 var(--serif); margin: 0 0 3px; }
+#legend .sub { font: 400 8.5px/1.4 var(--mono); letter-spacing: .12em; color: var(--dim); margin-bottom: 8px; text-transform: uppercase; }
+#legend .it { display: flex; align-items: center; gap: 8px; font: 400 10.5px/1.6 var(--mono); color: #cfcdc7; }
+.sw { width: 14px; height: 10px; flex: none; }
+.sw.hatch { background-image: repeating-linear-gradient(135deg, rgba(255,255,255,.75) 0 2px, transparent 2px 5px); outline: 1px dashed currentColor; outline-offset: -1px; }
+.sw.line { height: 2px; }
+.sw.dot { width: 9px; height: 9px; border-radius: 50%; margin: 0 2.5px; }
+.sw.box { box-shadow: inset 0 3px 0 #9eeefa; }
+#info { right: 12px; bottom: 34px; max-width: 280px; }
+#info h2, #empty h2 { font: 300 15px/1.2 var(--serif); margin: 0 0 6px; }
+#info div, #empty div { font: 400 10.5px/1.6 var(--mono); color: #cfcdc7; }
+#empty { left: 50%; top: 50%; transform: translate(-50%, -50%); text-align: center; border-color: #3a3a3a; }
+#credit { position: absolute; left: 10px; bottom: 8px; right: 10px; font: 400 9px/1.3 var(--mono); letter-spacing: .04em; color: #9a9a96; text-shadow: 0 1px 2px #000; pointer-events: none; }
+.subject { width: 64px; height: 64px; pointer-events: none; }
+.subject svg { width: 100%; height: 100%; overflow: visible; }
+.subject path { fill: none; stroke: var(--red); stroke-width: 2.6; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw .8s .3s cubic-bezier(.6,.05,.3,1) forwards; }
+.subject .pin { fill: var(--red); stroke: none; animation: none; stroke-dasharray: none; }
+.subject .tag { position: absolute; left: 50%; top: 66px; transform: translateX(-50%); white-space: nowrap; font: 400 9px/1 var(--mono); letter-spacing: .12em; color: var(--ink); text-shadow: 0 1px 3px #000; text-transform: uppercase; }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+.maplibregl-ctrl-attrib, .maplibregl-ctrl-logo { display: none !important; }
+@media (prefers-reduced-motion: reduce) { .subject path { animation: none; stroke-dashoffset: 0; } }

@@ -1,8 +1,8 @@
 // Content script: read the address, ask the background for a report, render the panel.
 import { readListingAddress, buildAddressInfo } from './address';
-import { Panel } from './panel';
+import { Panel, injectFonts } from './panel';
 import { SAME_ADDRESS_THROTTLE_MS } from '../lib/config';
-import type { ToBg, ToContent } from '../lib/types';
+import type { MapPayload, ToBg, ToContent } from '../lib/types';
 
 let panel: Panel | undefined;
 let lastKey = '';
@@ -13,13 +13,16 @@ const post = (m: ToBg) => chrome.runtime.sendMessage(m).catch(() => undefined);
 
 const ensurePanel = () => {
   if (!panel) {
+    injectFonts();
     panel = new Panel({
       onManual: (text) => {
         const info = buildAddressInfo(text);
         if (info) post({ type: 'ANALYSE', address: info, url: location.href, manual: true });
         else panel?.render({ address: text, rows: [], state: 'not_found', message: 'Could not parse that address. Use: 12 Smith St, Waterloo NSW 2017' });
       },
-      onAsking: (asking) => post({ type: 'ASKING', asking })
+      onAsking: (asking) => post({ type: 'ASKING', asking }),
+      // The background fetches the layer through the proxy; only GeoJSON comes back (never the key).
+      onMap: (rowId) => chrome.runtime.sendMessage({ type: 'MAP', rowId } satisfies ToBg) as Promise<MapPayload>
     });
   }
   return panel;

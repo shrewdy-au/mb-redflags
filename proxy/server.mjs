@@ -33,6 +33,9 @@ const ALLOW = [
   /^\/v1\/geocode\/suburb$/,
   /^\/v1\/properties\/[A-Za-z0-9]+\/(profile|risks\/all|surroundings\/public-housing|street\/profile|valuation\/avm|valuation\/agent-quoting|transport\/nearby)$/,
   /^\/v1\/suburbs\/[^/]+\/risks\/(extras|property-hazard-counts)$/,
+  // Map drawer layers (GeoJSON), fetched only when the user opens a row's map.
+  /^\/v1\/suburbs\/[^/]+\/shapes\/(hazards|public-housing-sa1|noise-heatmap|busy-roads|easements)$/,
+  /^\/v1\/suburbs\/[^/]+\/development\/(zoning-map|building-controls)$/,
   // Used only by scripts/ (demo listing pick + held-out check), never by the extension.
   /^\/v1\/suburbs\/[^/]+\/(listings\/for-sale|properties|demographics\/tenure)$/
 ];

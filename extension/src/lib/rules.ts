@@ -209,6 +209,18 @@ function transportRow(b: Bundle): Row {
   return { id: 'transport', label: 'Nearest transport', status: 'INFO', summary: parts.join(' · ') || 'none within radius', endpoint: ep, level: 'property' };
 }
 
+/** Info rows that exist to open the map drawer; their layers are fetched only on click. */
+function mapOnlyRows(): Row[] {
+  return [
+    { id: 'planning', label: 'Planning: zone + height limit', status: 'INFO', summary: 'zoning and height-of-building controls · open the map',
+      endpoint: '/v1/suburbs/{SAL}/development/zoning-map + building-controls', level: 'suburb', verify: VERIFY },
+    { id: 'roads', label: 'Busy roads + noise', status: 'INFO', summary: 'busy roads and the noise heatmap · open the map',
+      endpoint: '/v1/suburbs/{SAL}/shapes/busy-roads + noise-heatmap', level: 'suburb' },
+    { id: 'easements', label: 'Easements', status: 'INFO', summary: 'mapped easements within 1 km · open the map',
+      endpoint: '/v1/suburbs/{SAL}/shapes/easements', level: 'suburb', verify: VERIFY }
+  ];
+}
+
 export function buildRows(b: Bundle): Row[] {
   return [
     ...HAZARDS.slice(0, 6).map((h) => hazardRow(h, b.risks)),
@@ -220,7 +232,8 @@ export function buildRows(b: Bundle): Row[] {
     quotingRow(b),
     hazardRow(HAZARDS[7], b.risks),
     hazardRow(HAZARDS[8], b.risks),
-    transportRow(b)
+    transportRow(b),
+    ...mapOnlyRows()
   ];
 }
 

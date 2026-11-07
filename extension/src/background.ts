@@ -3,9 +3,12 @@
 import { runAnalysis, finish } from './lib/pipeline';
 import type { Bundle } from './lib/rules';
 import { URL_DEBOUNCE_MS } from './lib/config';
-import type { AddressInfo, Report, ToBg, ToContent } from './lib/types';
+import { buildMapPayload } from './lib/maplayers';
+import type { MbResult } from './lib/mb';
+import type { AddressInfo, MapPayload, Report, ToBg, ToContent } from './lib/types';
 
-interface TabState { seq: number; bundle?: Bundle; report: Report }
+// geo: map-layer responses for the drawer, in memory only, dropped with the TabState on the next address.
+interface TabState { seq: number; bundle?: Bundle; report: Report; geo: Map<string, Promise<MbResult>> }
 const tabs = new Map<number, TabState>();
 const timers = new Map<number, ReturnType<typeof setTimeout>>();
 
@@ -16,9 +19,14 @@ const send = (tabId: number, report: Report) => {
   chrome.tabs.sendMessage(tabId, msg).catch(() => undefined);
 };
 
-chrome.runtime.onMessage.addListener((msg: ToBg, sender) => {
+chrome.runtime.onMessage.addListener((msg: ToBg, sender, sendResponse) => {
   const tabId = sender.tab?.id;
   if (tabId === undefined) return;
+  if (msg.type === 'MAP') {
+    mapFor(tabId, msg.rowId).then(sendResponse, (e) => sendResponse({ type: 'MBRF_MAP', rowId: msg.rowId, title: 'Map', sub: '', center: null,
+      address: '', layers: [], legend: [], error: String(e?.message || e) } satisfies MapPayload));
+    return true; // async sendResponse
+  }
   if (msg.type === 'ANALYSE') {
     // Debounce SPA URL churn: only the last address inside the window runs.
     clearTimeout(timers.get(tabId));
@@ -38,11 +46,20 @@ async function analyse(tabId: number, a: AddressInfo) {
   const prev = tabs.get(tabId);
   const seq = (prev?.seq || 0) + 1;
   const asking = prev?.bundle?.asking ?? null;
-  const st: TabState = { seq, report: { address: a.raw, rows: [], state: 'loading', asking } };
+  const st: TabState = { seq, report: { address: a.raw, rows: [], state: 'loading', asking }, geo: new Map() };
   tabs.set(tabId, st);
   const out = await runAnalysis(a, asking, () => tabs.get(tabId)?.seq !== seq, (r) => send(tabId, r));
   if (!out) return; // superseded by a newer address
   st.bundle = out.bundle;
   st.report = out.report;
   send(tabId, st.report);
+}
+
+async function mapFor(tabId: number, rowId: string): Promise<MapPayload> {
+  const st = tabs.get(tabId);
+  const b = st?.bundle;
+  if (!st || !b || !st.report.sal) {
+    return { type: 'MBRF_MAP', rowId, title: 'Map', sub: '', center: null, address: '', layers: [], legend: [], error: 'Run a check first.' };
+  }
+  return buildMapPayload(rowId, { gnaf: b.gnaf, sal: st.report.sal, address: st.report.address, bundle: b, cache: st.geo });
 }

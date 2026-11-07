@@ -43,5 +43,24 @@ export interface AddressInfo {
 // content <-> background messages
 export type ToBg =
   | { type: 'ANALYSE'; address: AddressInfo; url: string; manual?: boolean }
-  | { type: 'ASKING'; asking: number | null };
+  | { type: 'ASKING'; asking: number | null }
+  | { type: 'MAP'; rowId: string };
 export type ToContent = { type: 'REPORT'; report: Report };
+
+// Map drawer payload: background -> content (sendResponse) -> drawer iframe (postMessage). GeoJSON only, no key.
+export type MapLayerKind = 'hazard' | 'choropleth' | 'points' | 'zoning' | 'hob' | 'heat' | 'lines';
+export interface MapLayer { id: string; kind: MapLayerKind; label: string; color?: string; data: any }
+export interface LegendItem { label: string; color: string; style?: 'fill' | 'hatch' | 'line' | 'dot' | 'box' }
+export interface MapPayload {
+  type: 'MBRF_MAP';
+  rowId: string;
+  title: string;          // e.g. "Flood (modelled)"
+  sub: string;            // mono line under the title
+  center: [number, number] | null; // [lng, lat]
+  address: string;
+  layers: MapLayer[];
+  legend: LegendItem[];
+  card?: { title: string; lines: string[] };
+  empty?: string;         // "No mapped flood within 1 km"
+  error?: string;
+}

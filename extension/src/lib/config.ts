@@ -6,3 +6,5 @@ export const EXT_TOKEN = 'mb-redflags-local';
 export const CONCURRENCY = 4;
 export const URL_DEBOUNCE_MS = 600;
 export const SAME_ADDRESS_THROTTLE_MS = 15_000; // pattern from MOGL scraper content-script
+// Map drawer ("urban scanner"). Set false to ship the panel skin without the drawer.
+export const MAP_DRAWER = true;
