@@ -23,6 +23,7 @@ const MB_BASE = (process.env.MB_BASE || 'https://api-ht.microburbs.com.au').repl
 const EXT_TOKEN = process.env.EXT_TOKEN || 'mb-redflags-local';
 const MOCK = process.env.MOCK === '1' || process.env.MOCK === 'true';
 // Optional AI rewrite of the Next steps (paid Anthropic API key in proxy/.env). Without it the templates are the feature.
+// (No temperature: this model rejects it; the JSON-only system prompt keeps output tight.)
 const AI_KEY = process.env.ANTHROPIC_API_KEY || '';
 const AI_SYSTEM = `You help a first-time property buyer in Sydney who knows nothing about property. You get a list of checks about one
 listing (label, status RED/AMBER/GREEN/GREY/INFO, a short value). Write five short sections in plain English a 15-year-old understands:
@@ -119,7 +120,7 @@ const server = http.createServer(async (req, res) => {
       const up = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST', signal: AbortSignal.timeout(30000),
         headers: { 'x-api-key': AI_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-        body: JSON.stringify({ model: 'claude-sonnet-5-5', max_tokens: 600, temperature: 0.2, system: AI_SYSTEM, messages: [{ role: 'user', content: user }] })
+        body: JSON.stringify({ model: 'claude-sonnet-5-5', max_tokens: 600, system: AI_SYSTEM, messages: [{ role: 'user', content: user }] })
       });
       const j = await up.json();
       if (!up.ok) return send(res, 502, { error: j?.error?.message || `AI HTTP ${up.status}` }, cors);
