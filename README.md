@@ -6,7 +6,7 @@
 | Task | Deliverable | Where |
 |---|---|---|
 | Task 1 | Reel: **"Waterloo: 749 public homes out, 3,000 in"** (43.5 s, Hand & Machine documentary cut: 9News footage, two real soundbites, the recreated ABC page, five Microburbs map shots), with a pitch video (44.6 s) | [`/demo.mp4`](demo.mp4), [`/pitch.mp4`](pitch.mp4) |
-| Task 1 | Second post: **"Zetland: Randwick objected, the City backed it"** (40.9 s) | [`/task1a/demo.mp4`](task1a/demo.mp4) |
+| Task 1 | Second post: **"Zetland: Same developer, two councils"** (43.4 s, Hand & Machine cut: 9News footage of Harry Triguboff, his own soundbite, six Microburbs map shots) | [`/task1a/demo.mp4`](task1a/demo.mp4) |
 | Task 3 | **MB Red Flags**: a GO / INVESTIGATE / NO-GO side panel for City of Sydney listings on realestate.com.au and domain.com.au | [`/extension`](extension), [`/proxy`](proxy) |
 
 Full write-up (data, method, what worked, held-out checks, competitors): [`report.html`](report.html).
@@ -111,7 +111,7 @@ Any RED → **NO-GO** (investigate before making an offer), any AMBER → **INVE
 | Easements (new info row) | hatched fill | `shapes/easements` |
 | Street growth forecast | the property marker and a rank card (no street geometry in the API) | `street/profile` (already fetched) |
 
-**How layers are fetched.** Only on click. The content script asks the service worker (`MAP` message); the worker calls the proxy, trims suburb layers to about 1 km round the property, and returns GeoJSON plus legend; the content script posts it into the iframe. The key never leaves the proxy. Responses are cached in memory per tab and dropped on the next address, so opening every hazard row costs one `risks/all?geojson=true` call; a full click-through of every row costs 7 calls. Property position comes from `transport/nearby` (`center_lat`/`center_lng`), falling back to the address's own record in `surroundings/public-housing`. Empty layers show "No mapped {layer} within 1 km". `MAP_DRAWER` in `extension/src/lib/config.ts` turns the drawer off.
+**How layers are fetched.** Only on click. The content script asks the service worker (`MAP` message); the worker calls the proxy, trims suburb layers to about 1 km round the property, and returns GeoJSON plus legend; the content script posts it into the iframe. The key never leaves the proxy. Responses are cached in memory per tab and dropped on the next address, so opening every hazard row costs one `risks/all?geojson=true` call; a full click-through of every row costs 7 calls. Property position comes from `transport/nearby` (`center_lat`/`center_lng`), falling back to the address's own record in `surroundings/public-housing`. Empty layers show "No mapped {layer} within 1 km". `MAP_DRAWER` in `extension/src/lib/config.ts` turns the drawer off. On the map, hover highlights a shape and you can click any shape for its data (SA1 share, mesh-block renters and median price, zone, height limit, DA details, hazard category, flagged-home chance, road class); the card and a red hand-drawn ring stay until you close the card or click empty map. Flagged homes never show an address.
 
 **Several layers: the stack.** Tick two or more rows and the drawer switches to the reel renderer's stack mode: each layer becomes a translucent slab floating at its own height, in a fixed order from the ground up (zoning → public housing → hazards, each its own slab → height-limit envelopes → noise and busy roads → points). The gap between slabs is a sixth of the layers' footprint (clamped to 120–400 m) and the first slab sits one gap up. Height-limit envelopes are extruded from their slab, points become short cylinders, and busy roads become thin ribbons. A new slab rises from the ground (1.2 s, staggered 0.6 s when several arrive together) and an unticked one drops back and fades out. Each slab has a label tab in its colour, a pale guide pillar stands at the data's corner, and a thin red line runs up through every slab from the red circle on the property. The camera eases to pitch 60 and zooms out to fit the whole stack under the legend; the orbit carries on until you drag. The legend lists each ticked row with its own checkbox (untick there to remove it), and a Stack / Flat switch in the drawer header lays everything flat on the ground instead. Adding layers costs no repeat calls: payloads are kept per address in the panel and the worker, and every hazard comes from the one `risks/all?geojson=true` response. Under reduced motion slabs appear in place without rising.
 
@@ -205,3 +205,24 @@ Additions to the figure → source table for `demo.mp4` (H&M version). The Micro
 | Height controls in force 28 Feb 2023 | NSW Planning Portal, Waterloo Estate (South) finalisation, https://www.planningportal.nsw.gov.au/ppr/finalisation/waterloo-estate-south |
 
 Maps: Microburbs data · © OpenStreetMap contributors, OpenMapTiles, OpenFreeMap.
+
+### Reel 1A (H&M)
+
+Zetland: Randwick objected. The City backed it. H&M rebuild, 7 Nov 2026. Footage is a news excerpt (fair dealing for reporting news, Copyright Act s103B; each excerpt 6 s or less, credited on screen).
+
+| On screen | What | Source |
+|---|---|---|
+| 0:00–1.5 s, Harry Triguboff on camera (hook) | 9News exclusive interview with Harry Triguboff (muted under the VO) | 9 News Australia, "Billionaire developer Harry Triguboff exclusive", YouTube, uploaded 19 Feb 2019, https://www.youtube.com/watch?v=QUd36rICiOI (excerpt 0:35.6–0:41.6) |
+| ~1.5–3.1 s, Triguboff again; ~8.2–12.6 s, soundbite | Harry Triguboff: "I am building at the same rate. So what I can't sell, I lease." | same video, 1:30.8–1:36.8 (9News) |
+
+#### Figures on new plates (Reel 1A)
+
+| Figure | Source |
+|---|---|
+| DA D/2024/816: 27 storeys, 302 apartments + 28 townhouses | Microburbs API, development/applications, Zetland |
+| Randwick Council unanimous vote, June 2023 | ABC News, 8 Jun 2023, https://www.abc.net.au/news/2023-06-08/nsw-government-tested-by-proposed-meriton-development-zetland/102405572 |
+| City of Sydney councillors: all but one in favour | Green Street News, 27 Jun 2023, https://greenstreetnews.com/?p=598240 |
+| Up to 90 m on part of the site, LEP amended 1 May 2024, floor space unchanged | NSW Planning Portal, https://www.planningportal.nsw.gov.au/ppr/lep-decision/118-130-epsom-road-and-905-south-dowling-street-zetland-sydney-lep-2012-amendment |
+| Little Bay: ~2,600 apartments / 2 × 27 storeys rejected incl. HDA 2025; HDA backs 2-5 storeys 29 Oct 2026 | The Urban Developer, https://www.theurbandeveloper.com/articles/meriton-harry-triguboff-little-bay-sydney-nsw-ssd-approval |
+
+Maps: Microburbs data (Little Bay from Microburbs national data, outside the hackathon dataset) · © OpenStreetMap contributors, OpenFreeMap.
