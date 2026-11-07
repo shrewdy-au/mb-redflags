@@ -32,7 +32,9 @@ const ALLOW = [
   /^\/v1\/geocode\/address$/,
   /^\/v1\/geocode\/suburb$/,
   /^\/v1\/properties\/[A-Za-z0-9]+\/(profile|risks\/all|surroundings\/public-housing|street\/profile|valuation\/avm|valuation\/agent-quoting|transport\/nearby)$/,
-  /^\/v1\/suburbs\/[^/]+\/risks\/(extras|property-hazard-counts)$/
+  /^\/v1\/suburbs\/[^/]+\/risks\/(extras|property-hazard-counts)$/,
+  // Used only by scripts/ (demo listing pick + held-out check), never by the extension.
+  /^\/v1\/suburbs\/[^/]+\/(listings\/for-sale|properties|demographics\/tenure)$/
 ];
 
 // --- token bucket: 8 req/s (API allows ~10) ---

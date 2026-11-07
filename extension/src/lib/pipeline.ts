@@ -17,12 +17,18 @@ export function pickGnaf(cands: any[], a: AddressInfo): any | undefined {
   const num = (a.number || '').toUpperCase();
   const street = norm(a.streetName || '');
   const streetCore = street.split(' ')[0] || '';
+  const suburb = norm((a.suburb || '').replace(/\s*\(.*\)\s*$/, ''));
   const scored = cands.map((c) => {
     const abbr = norm(String(c.abbr || c.name || ''));
     let s = 0;
     if (num && new RegExp(`(^|[\\s/])${num}(\\s|$)`).test(abbr)) s += 2;
     if (street && abbr.includes(street)) s += 2; else if (streetCore && abbr.includes(streetCore)) s += 1;
-    if (a.unit && (abbr.startsWith(`${a.unit.toUpperCase()}/`) || abbr.includes(`UNIT ${a.unit.toUpperCase()} `))) s += 1;
+    const isUnit = /^(UNIT|SUITE|SHOP|APT|FLAT)\s|^\w+\//.test(abbr);
+    if (a.unit) {
+      const u = a.unit.toUpperCase();
+      if (new RegExp(`^(UNIT |SUITE |APT |FLAT )?${u}/`).test(abbr) || abbr.includes(`UNIT ${u} `)) s += 1; else s -= 1;
+    } else if (isUnit) s -= 0.5; // a house address should not land on a unit in the same block
+    if (suburb && abbr.endsWith(` ${suburb}`)) s += 0.5;
     return { c, s };
   }).sort((x, y) => y.s - x.s);
   return scored[0].s >= 3 ? scored[0].c : undefined;

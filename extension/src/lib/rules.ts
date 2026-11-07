@@ -80,13 +80,21 @@ function publicHousingRows(b: Bundle): Row[] {
     const arr = b.risks.data?.public_housing;
     const list: any[] = Array.isArray(arr) ? arr : arr ? [arr] : [];
     const on = list.find((r) => r?.on_property === true);
-    const near = list.find((r) => r?.on_property === false);
+    const others = list.filter((r) => r?.on_property !== true).sort((x, y) => (num(x?.nearest_distance_m) ?? 1e9) - (num(y?.nearest_distance_m) ?? 1e9));
+    const near = others[0];
+    const nearHigh = others.find((r) => (num(r?.value) ?? 0) >= 20);
+    const nearTxt = [near ? `nearest mapped area ${fmtM(num(near.nearest_distance_m))} away: ${near.value}` : '',
+      nearHigh && nearHigh !== near ? `nearest area ≥20%: ${fmtM(num(nearHigh.nearest_distance_m))} away (${nearHigh.value})` : ''].filter(Boolean).join(' · ');
     if (on) {
       const pct = num(on.value);
       const status: Status = pct === null ? 'GREY' : pct >= 20 ? 'RED' : pct >= 10 ? 'AMBER' : 'GREEN';
       rows.push({ id: 'ph_area', label: 'Public housing — area share', status, summary: `${pct ?? '?'}% of homes in this area`, endpoint: ep1, level: 'SA1', distance_m: 0,
-        detail: near ? `next area ${fmtM(num(near.nearest_distance_m))} away: ${near.value}` : undefined, verify: VERIFY });
-    } else rows.push({ id: 'ph_area', label: 'Public housing — area share', status: 'GREY', summary: 'no on-property row returned', endpoint: ep1, level: 'SA1' });
+        detail: nearTxt || undefined, verify: VERIFY });
+    } else if (list.length) {
+      // The layer only lists areas that contain public housing; none covers this address.
+      rows.push({ id: 'ph_area', label: 'Public housing — area share', status: 'GREEN', summary: "this address's area is not in the public-housing layer",
+        endpoint: ep1, level: 'SA1', distance_m: num(near?.nearest_distance_m), detail: nearTxt || undefined, verify: VERIFY });
+    } else rows.push({ id: 'ph_area', label: 'Public housing — area share', status: 'GREEN', summary: 'no public-housing area within 1 km', endpoint: ep1, level: 'SA1' });
   } else rows.push(noData('ph_area', 'Public housing — area share', b.risks, ep1, 'SA1'));
 
   // 200 m neighbourhood from surroundings/public-housing
@@ -132,7 +140,12 @@ function anefRow(b: Bundle): Row {
   // Fallback: suburb-level share of properties under aircraft noise
   if (b.hazardCounts?.ok) {
     const an = b.hazardCounts.data?.aircraft_noise || {};
-    const pct = num(an.pct);
+    if (!Object.keys(an).length) {
+      return { id: 'anef', label, status: 'GREY', summary: 'no ANEF data returned for this suburb',
+        endpoint: '/v1/suburbs/{SAL}/risks/property-hazard-counts → aircraft_noise', level: 'suburb',
+        detail: 'Mesh-block anef_med absent from risks/extras and suburb aircraft_noise empty. Check the Sydney Airport ANEF map and the s10.7 certificate.', verify: VERIFY };
+    }
+    const pct = num(an.pct ?? an.any_pct ?? an.anef20_pct);
     const status: Status = pct !== null && pct >= 10 ? 'AMBER' : 'GREEN';
     return { id: 'anef', label, status, summary: pct === null ? 'no mapped exposure (suburb level)' : `${pct}% of suburb properties in an ANEF area`,
       endpoint: '/v1/suburbs/{SAL}/risks/property-hazard-counts → aircraft_noise', level: 'suburb', detail: `${note}; suburb-level fallback, mesh block value unavailable.`, verify: VERIFY };
@@ -155,9 +168,10 @@ function streetRow(b: Bundle): Row {
   if (n < 10 || /^low/i.test(conf)) status = 'GREY';
   else if (/lower/i.test(tercile) || (s4 !== null && sub4 !== null && s4 <= sub4 - 2)) status = 'RED';
   else if (/upper/i.test(tercile) && s4 !== null && sub4 !== null && s4 > sub4 && confOk) status = 'GREEN';
+  else status = 'INFO'; // middle third, or upper third without the supporting evidence: neutral
   const summary = `${p.title || d.street || 'street'}: rank ${rank.rank ?? '?'}/${rank.total ?? d.streets_in_suburb ?? '?'} (${tercile || 'n/a'}), 4-yr ${s4 ?? '?'}%/yr vs suburb ${sub4 ?? '?'}%/yr`;
   return { id: 'street', label, status, summary, endpoint: ep, level: 'street',
-    detail: `confidence ${conf || '?'}, ${n} sales${status === 'GREY' ? ' — too thin or low confidence to rate' : ''}. Forecast, not a guarantee.` };
+    detail: `confidence ${conf || '?'}, ${n} sales${status === 'GREY' ? ' — too thin or low confidence to rate' : status === 'INFO' ? ' — middle of the pack, not rated' : ''}. Forecast, not a guarantee.` };
 }
 
 function avmRow(b: Bundle): Row {

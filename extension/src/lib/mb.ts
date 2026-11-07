@@ -29,6 +29,7 @@ export async function mbGet<T = any>(path: string, params?: Record<string, strin
     if (res.status === 403) return { ok: false, kind: 'OUTSIDE_COVERAGE', message: 'Outside City of Sydney coverage', mock, endpoint };
     let body: any = null;
     try { body = await res.json(); } catch { /* fallthrough */ }
+    if (res.status === 404) return { ok: false, kind: 'NO_DATA', reason: 'not_found', message: body?.detail || body?.message || 'not found', mock, endpoint };
     if (!res.ok) return { ok: false, kind: 'ERROR', message: body?.error || body?.detail || `HTTP ${res.status}`, mock, endpoint };
     if (!body || body.data === null || body.data === undefined || body.available === false) {
       return { ok: false, kind: 'NO_DATA', reason: body?.reason, message: body?.message || 'no data', mock, endpoint };

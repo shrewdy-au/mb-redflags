@@ -10,6 +10,7 @@ const CSS = `
 .wrap.min .body { display: none; }
 .top { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid #eee6da; }
 .brand { font-weight: 700; letter-spacing: .02em; }
+.lvl { font-size: 10px; color: #8a8a8a; text-transform: uppercase; letter-spacing: .03em; margin-top: 1px; }
 .mock { font-size: 10px; background: #ffe7a3; color: #6b4d00; border-radius: 6px; padding: 1px 6px; font-weight: 700; }
 .sp { flex: 1; }
 button { font: inherit; cursor: pointer; border: 1px solid #d8d0c4; background: #fff; border-radius: 8px; padding: 4px 8px; }
@@ -81,7 +82,8 @@ export class Panel {
     const d = h('details', 'row');
     const s = h('summary');
     const txt = h('div');
-    txt.append(h('div', 'lab', r.label), h('div', 'sum', r.summary));
+    txt.append(h('div', 'lab', r.label), h('div', 'sum', r.summary),
+      h('div', 'lvl', `${r.level}${r.distance_m !== undefined && r.distance_m !== null ? ` · ${Math.round(r.distance_m)} m` : ''}`));
     s.append(h('span', `dot ${r.status}`), txt);
     const more = h('div', 'more');
     const ep = h('div'); ep.append('Endpoint: ', h('code', '', r.endpoint)); more.append(ep);

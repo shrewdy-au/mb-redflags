@@ -10,7 +10,8 @@
     "proxy:mock": "MOCK=1 node proxy/server.mjs",
     "dev": "node scripts/dev.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "holdout": "node scripts/holdout.mjs"
+    "holdout": "node scripts/holdout.mjs",
+    "holdout:sa1": "node scripts/holdout-sa1.mjs"
   },
   "license": "MIT",
   "devDependencies": {

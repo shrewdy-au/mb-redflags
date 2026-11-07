@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MB Red Flags report</title>
+<title>Team MOGL report</title>
 <style>
 :root { --bg:#fffdf9; --fg:#1b1b1b; --mute:#666; --line:#e3ddd3; --red:#b3261e; --amber:#b7791f; --green:#2f7d4f; }
 body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; }
@@ -14,53 +14,104 @@ h1 { font-size:30px; margin:0 0 4px; } h2 { margin-top:36px; border-top:1px soli
 </style>
 </head>
 <body><main>
-<h1>MB Red Flags</h1>
-<p class="sub">A GO / INVESTIGATE / NO-GO panel for City of Sydney listings, built on the Microburbs API. Microburbs hackathon, 7 Nov 2026. Team MOGL (Jake Milne).</p>
+<h1>Team MOGL: hackathon report</h1>
+<p class="sub">Microburbs hackathon, 7 Nov 2026. Team MOGL (Jake Milne). Entries: <strong>Task 1</strong> (social post: two short documentary reels) and <strong>Task 3</strong> (Chrome extension: MB Red Flags). Decision support and journalism, not financial or legal advice.</p>
 
-<h2>1. Data</h2>
+<h2>Task 1: social posts</h2>
+<p><strong>Reel 1</strong> (<code>/demo.mp4</code>, pitch <code>/pitch.mp4</code>): "Waterloo: 749 public homes out, 3,000 in". <strong>Reel 2</strong> (<code>/task1a/demo.mp4</code>): "Zetland: Randwick objected, the City backed it".</p>
+<h3>Data</h3>
 <ul>
-  <li>Microburbs API, City of Sydney LGA: <code>geocode/address</code>, <code>properties/{gnaf}/profile</code>, <code>risks/all</code>, <code>surroundings/public-housing</code>, <code>street/profile</code>, <code>valuation/avm</code>, <code>valuation/agent-quoting</code>, <code>transport/nearby</code>, <code>suburbs/{SAL}/risks/extras</code>, <code>suburbs/{SAL}/risks/property-hazard-counts</code>.</li>
-  <li>From the listing page: the address only. The asking price is typed in by the user.</li>
-  <li>Held-out check: the supplied public-housing CSV and the supplied address list, used on the day only and not republished.</li>
+  <li>Microburbs hackathon API (City of Sydney LGA): suburb tenure (<code>demographics/tenure</code>), public-housing layers (<code>risks/all</code>, <code>surroundings/public-housing</code>), suburb listings and properties.</li>
+  <li>Reel 2 also uses Microburbs' national API for Little Bay (outside the hackathon area), licensed to MOGL.</li>
+  <li>Maps: OpenFreeMap tiles from OpenStreetMap data (© OpenStreetMap contributors) with the OpenMapTiles schema; terrain from Geoscience Australia.</li>
+  <li>On-screen claims: ABC News, NSW Planning Portal, The Urban Developer. Every figure is listed with its source in the README.</li>
+</ul>
+<h3>Method</h3>
+<ol>
+  <li>Pick one planning story per suburb where the API can show the "before" on a map: who lives there now (tenure share, public-housing layer) and what is planned.</li>
+  <li>Write a 60 to 90 second script where every number has a named source; render the map shots from the API layers on open map tiles.</li>
+  <li>Voice, grade and captions; no call to action.</li>
+</ol>
+<h3>Held-out check (reels)</h3>
+<p>The headline figures (749 public homes to be replaced; about 3,300 new homes on the estate, rounded to 3,000 in the title) were cross-checked against the ABC News article and against the API: <code>demographics/tenure</code> gives Waterloo (NSW) a 2021 Census public-housing share of 20.2%, consistent with a large existing estate. The API does not count individual dwellings to be demolished, so 749 rests on the published source, not the API.</p>
+<h3>What worked / what didn't</h3>
+<ul>
+  <li>Worked: the public-housing layer maps cleanly onto the estate boundary, so the "before" is visible rather than asserted.</li>
+  <li>Didn't: the hackathon API stops at the City of Sydney boundary, so the Little Bay half of the Zetland story needed MOGL's licensed national API.</li>
 </ul>
 
-<h2>2. Method</h2>
+<h2>Task 3: MB Red Flags (Chrome extension)</h2>
+<p>When you open a realestate.com.au or domain.com.au listing in the City of Sydney, a side panel gives one verdict (GO / INVESTIGATE / NO-GO) and the rows behind it, each labelled with the level its fact applies at (property, 200 m, mesh block, SA1, street, suburb, agency) and the distance where there is one.</p>
+<h3>Data</h3>
+<ul>
+  <li>Microburbs hackathon API: <code>geocode/address</code>, <code>properties/{gnaf}/profile</code>, <code>risks/all</code>, <code>surroundings/public-housing</code>, <code>street/profile</code>, <code>valuation/avm</code>, <code>valuation/agent-quoting</code>, <code>transport/nearby</code>, <code>suburbs/{SAL}/risks/extras</code>, <code>suburbs/{SAL}/risks/property-hazard-counts</code>. Scripts only: <code>suburbs/{SAL}/listings/for-sale</code>, <code>suburbs/{SAL}/properties</code>, <code>suburbs/{SAL}/demographics/tenure</code>.</li>
+  <li>From the listing page: the address only. The asking price is typed in by the user.</li>
+  <li>No API output, keys or CSV rows are stored in the repo.</li>
+</ul>
+<h3>Method</h3>
 <ol>
-  <li>Resolve the address to a G-NAF id. Choose the geocode candidate whose <code>abbr</code> matches the street number and street name. For units, try <code>3/12 Smith St</code> first, then <code>Unit 3 12 Smith St</code>.</li>
-  <li>Make 8 tier-1 calls with <code>Promise.allSettled</code>, at most 4 at a time.</li>
-  <li><strong>Mesh-block ANEF join:</strong> <code>profile.mesh_block</code> → <code>risks/extras.per_mb.risks[].anef_med</code>. Labelled "microburb estimate, not a property contour". Falls back to the suburb share.</li>
-  <li><strong>On-property vs distance:</strong> each hazard gets its own buffer. Public housing is measured twice, as the area share and as the 200 m share, and the row goes red if the subject address itself is flagged.</li>
-  <li><strong>Street forecast rank</strong>, compared with the suburb median. Thin evidence is greyed out, not rated.</li>
-  <li>Any RED → NO-GO, any AMBER → INVESTIGATE, otherwise GO. The wording is neutral: decision support, not advice.</li>
+  <li>Resolve the address to a G-NAF id: the geocode candidate whose <code>abbr</code> matches street number and street name, with a bonus for the unit (<code>UNIT 3/12 …</code>) and the suburb, and a penalty when a house address would land on a unit.</li>
+  <li>8 calls with <code>Promise.allSettled</code>, at most 4 at a time, through a local proxy that holds the key (8 req/s token bucket, honours 429 Retry-After; 403 = outside coverage; 404 and <code>data:null</code> = no data, shown grey).</li>
+  <li>Hazards from <code>risks/all</code>: on-property row first, then the nearest, with a buffer per hazard.</li>
+  <li>Public housing at two scales: the SA1 share of the area the address sits in (the layer lists only areas with public housing, so "not in the layer" reads as none) and the 200 m flagged share, red if the address itself is flagged.</li>
+  <li>Aircraft noise: <code>profile.mesh_block</code> joined to <code>risks/extras.per_mb.risks[].anef_med</code>, falling back to suburb <code>property-hazard-counts.aircraft_noise</code>; shown grey when neither has data.</li>
+  <li>Street forecast rank vs the suburb median; asking price vs AVM; agency quoting behaviour.</li>
+  <li>Any RED → NO-GO, any AMBER → INVESTIGATE, otherwise GO. Neutral wording: what to check, not what to buy.</li>
 </ol>
-
-<h2>3. What buyers already see on REA / Domain</h2>
-<p><span class="todo">TODO: one paragraph.</span> Price guide, photos, floor plan, suburb median and demographics, school catchments. Hazard overlays, public-housing share, aircraft noise and agent quoting behaviour are mostly not shown.</p>
-
-<h2>4. Competitors</h2>
+<h3>Live run (two real for-sale listings, picked from <code>listings/for-sale</code>)</h3>
+<table><tr><th>Listing</th><th>Verdict</th><th>Rows that drove it</th></tr>
+<tr><td>Terrace, Surry Hills</td><td>NO-GO (2 red)</td><td>Public-housing area share above the 20% line (SA1); street in the lower third of its suburb for the 4-year forecast; heritage amber</td></tr>
+<tr><td>Terrace, Waterloo</td><td>INVESTIGATE (1 amber)</td><td>Heritage on property; public housing under both thresholds (SA1 and 200 m); street in the upper third</td></tr>
+</table>
+<h3>Held-out check (extension)</h3>
+<p><code>scripts/holdout-sa1.mjs</code>: 5 suburbs (Redfern, Waterloo, Surry Hills, Alexandria, Zetland), first 10 addresses each from <code>suburbs/{SAL}/properties</code>. The extension's area flag (SA1 public-housing share ≥ 10%) is compared with (A) the 2021 Census mesh-block share from <code>demographics/tenure</code> ≥ 10% and (B) the 200 m flagged share from <code>surroundings/public-housing</code> ≥ 5% or the address itself flagged. Aggregates only (<code>out/holdout.json</code>).</p>
+<div class="wrap"><table><tr><th>Reference</th><th>n</th><th>TP</th><th>FP</th><th>FN</th><th>TN</th><th>agreement</th><th>precision</th><th>recall</th><th>Pearson (shares)</th></tr>
+<tr><td>A. Census mesh block (tenure)</td><td>37</td><td>3</td><td>1</td><td>11</td><td>22</td><td>0.676</td><td>0.75</td><td>0.214</td><td>0.905</td></tr>
+<tr><td>B. 200 m flagged share</td><td>47</td><td>3</td><td>1</td><td>15</td><td>28</td><td>0.66</td><td>0.75</td><td>0.167</td><td>0.842</td></tr>
+</table></div>
+<p>Reading: the shares move together (Pearson 0.905 and 0.842) and when the area flag fires it is usually right (precision 0.75), but it misses most mesh blocks above 10% (recall 0.214). An SA1 averages over several mesh blocks, so a concentrated estate block is diluted, and addresses outside the layer count as 0%. That is why the panel also shows the 200 m row and the nearest area at or above 20%. Caveats: the sample is the API's first 10 addresses per suburb, not random; 10 addresses had no tenure row for their mesh block. If the supplied CSVs are available, <code>scripts/holdout.mjs</code> runs the CSV-based check as well.</p>
+<h3>What worked / what didn't</h3>
+<ul>
+  <li>Worked: the full pipeline ran live on real listings, houses and units (<code>UNIT 111/1A …</code> forms), in about a second per address; outside-coverage addresses make no calls.</li>
+  <li>Worked: every row carries its level and distance, so a suburb fact never reads as a property fact.</li>
+  <li>Didn't: no suburb we tested returns <code>anef_med</code> in <code>risks/extras</code> or a value in <code>aircraft_noise</code>, so the ANEF row is grey in live mode.</li>
+  <li>Didn't: the heritage layer is on-property for most inner-city terraces, so almost every listing gets at least one amber.</li>
+  <li>Didn't: <code>public_housing</code> in <code>risks/all</code> returns up to 20 nearby areas, not the two rows the docs suggested; we now pick the on-property row and the nearest.</li>
+  <li>Didn't: the API has no portal URLs, so the demo listings were matched to portal pages by hand.</li>
+</ul>
+<h3>What buyers already see</h3>
+<p>Listing pages show the price guide (when given), photos, floor plan, suburb median and schools. Domain's property profiles flag flood, bushfire and heritage as detected or not. Neither portal shows public-housing share, aircraft noise or agent quoting behaviour.</p>
+<h3>Competitors (Task 3)</h3>
+<p class="sub">Figures are from public store listings read on 7 Nov 2026 and change over time. Claims are the developers' own and not independently tested.</p>
 <div class="wrap"><table>
-<tr><th>Product</th><th>What it does</th><th>Gap we fill</th></tr>
-<tr><td>Homer</td><td>~10k users; campaign history for listings <span class="todo">confirm</span></td><td>No hazard, public-housing or ANEF verdict</td></tr>
-<tr><td>Property Mate</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
-<tr><td>Properly</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
-<tr><td>Casa Intelligence</td><td>Hazards and a development score, SEQ only</td><td>Sydney coverage; single go / no-go</td></tr>
-<tr><td>Sydney Apartment Buyers Overlay</td><td><span class="todo">TODO</span></td><td><span class="todo">TODO</span></td></tr>
-<tr><td>Australia Estate Flight Paths</td><td>Flight-path overlay <span class="todo">confirm</span></td><td>Mesh-block ANEF combined with every other flag</td></tr>
+<tr><th>Product</th><th>What it does (sites; users; price; hazards)</th><th>Gap we fill</th></tr>
+<tr><td>Homer (formerly KoalaData)</td><td>Hidden price guides, guide-price accuracy and changes, campaign and listing history, agent pricing patterns. Sites: realestate.com.au and Domain, all states. Users: 10,000 on the Chrome Web Store (developer text claims 40,000+); 4.7 from 96 ratings. Price: free with a limited number of price reveals; paid plans in-app (amounts unverified). Free account with email and mobile verification. Hazards: none listed.</td><td>No hazard, public-housing or ANEF verdict</td></tr>
+<tr><td>Property Mate</td><td>Hidden price guides, estimated value (sourced to Domain Insight), suburb median and comparable sales, AI scan of photos and descriptions for issues, nearby council DAs, price-drop tracking, suburb summary (crime, amenities), and a "Hazard Check" for bushfire and flood overlays. Site: realestate.com.au. Users: about 4,000; 5.0 from 22 ratings. Price: free price guides; Gmail sign-in gives 2 free reports a week and a 5-property watchlist; Pro $9.99/month. Hazards: bushfire and flood only (per listing).</td><td>Closest rival on hazards, but flood and bushfire only; no aircraft noise, public-housing or street-level view, and no single verdict (unverified: how overlays are scored)</td></tr>
+<tr><td>Properly: Real Estate Price Estimator (Urban Digest)</td><td>Infers the likely listing price for "Contact Agent" / "Price Withheld" listings by locating the listing in price-filtered search results, in a sidebar. Site: realestate.com.au only. Users: 13; no ratings. Price: not stated on the listing (unverified). Hazards: none.</td><td>Price inference only; no risk or surroundings facts</td></tr>
+<tr><td>Casa Intelligence (Property Development Score)</td><td>0-100 AI development score badge, zoning and permitted uses, overlay detection, nearby DA search with approval rates. Sites: realestate.com.au and domain.com.au. Users: 7 on the store page (aggregators show 2 to 5). Price: free (listing). Hazards: flood, bushfire, heritage, vegetation, landslide, coastal, environmental overlays (per a third-party extension-tracker page). Coverage: South East Queensland per store text.</td><td>Sydney coverage; single go / no-go; buyer-risk framing, not development potential</td></tr>
+<tr><td>Sydney Apartment Buyers Overlay</td><td>Panel of building-related public records for the listed address: building orders, court judgements, media releases, owners-corporation court listings and sales since early 2025; header turns red if items are dated in the last two years. Site: realestate.com.au. Users, rating and price: unverified (store page would not load; details are from a search summary). Latest version 0.4.1, 29 Sep 2025. Hazards: none (building and legal records only).</td><td>Strata and legal history of the building; no environmental hazards, noise or public-housing facts</td></tr>
+<tr><td>Australia Estate Flight Paths</td><td>Flight-route overlay on listing maps with a direction switcher and a choice of nine airports (Sydney, Melbourne, Brisbane, Gold Coast, Hobart, Cambridge, Adelaide, Perth, Canberra). Sites: domain.com.au and realestate.com.au. Users: 167; 4.0 from 1 rating. Price: not stated (unverified). Hazards: flight paths only; it draws routes, not noise contours (ANEF).</td><td>Mesh-block ANEF combined with every other flag</td></tr>
+<tr><td>realestate.com.au and domain.com.au listing pages (native)</td><td>Domain: free "Property Profile" pages carry a "Perils and zones" section showing flood, bushfire and heritage as detected / not detected (seen on sample profiles, not confirmed on every listing); "School Catchment Zones" section on listings; suburb profiles (about, demographics, schools; desktop only). Price guide: shown when the agent supplies one; hidden for "Contact Agent" (why the extensions above exist). realestate.com.au: price guide, "property history" and suburb insights: unverified (no first-party source retrieved). Neither site: public-housing share, aircraft noise or agent quoting behaviour (unverified, based on the sources checked).</td><td>One verdict, on the page, with each fact's level (property, street, suburb) labelled</td></tr>
+<tr><td>Microburbs website (microburbs.com.au)</td><td>Suburb and property reports, valuations, street-level growth forecasts, comparable sales, undervalued-listing lists; flood, bushfire and other risk mapping listed as suburb data. Price: free account with partial data; reports $49 (suburb) and $39 (property) each, plus monthly plans (amounts unverified). No browser extension mentioned on the site. Accuracy figures (about 87% of valuations within 10%) are Microburbs' own claims.</td><td>Brings the data to the listing page in the buyer's flow, before they buy a report</td></tr>
 </table></div>
 
-<h2>5. Our added value</h2>
-<p><span class="todo">TODO.</span> One verdict, on the listing page, before the buyer pays for reports. Every row says the level its fact applies at, so a suburb fact is never presented as a property fact.</p>
+<h4>Competitor sources</h4>
+<ul>
+<li>Homer: <a href="https://chromewebstore.google.com/detail/hlmlbjneliokncgbophonbofnikfimja">https://chromewebstore.google.com/detail/hlmlbjneliokncgbophonbofnikfimja</a></li>
+<li>Property Mate: <a href="https://chromewebstore.google.com/detail/jjdmjmnkpjbckahjabaekdmompnpcpbi">https://chromewebstore.google.com/detail/jjdmjmnkpjbckahjabaekdmompnpcpbi</a></li>
+<li>Properly: <a href="https://chromewebstore.google.com/detail/properly-real-estate-pric/efageejmoollelombenbjonldadjkann">https://chromewebstore.google.com/detail/properly-real-estate-pric/efageejmoollelombenbjonldadjkann</a></li>
+<li>Casa Intelligence: <a href="https://chromewebstore.google.com/detail/delkecgdbbkddehhkfhcjjibjpahhbna">https://chromewebstore.google.com/detail/delkecgdbbkddehhkfhcjjibjpahhbna</a> and <a href="https://extscope.org/extension/delkecgdbbkddehhkfhcjjibjpahhbna">https://extscope.org/extension/delkecgdbbkddehhkfhcjjibjpahhbna</a></li>
+<li>Sydney Apartment Buyers Overlay: <a href="https://chromewebstore.google.com/detail/angoepcfblfcjnjlengabncnpolndhol">https://chromewebstore.google.com/detail/angoepcfblfcjnjlengabncnpolndhol</a></li>
+<li>Australia Estate Flight Paths: <a href="https://chromewebstore.google.com/detail/kkeklokcoakabhfkcnaciallocngeimd">https://chromewebstore.google.com/detail/kkeklokcoakabhfkcnaciallocngeimd</a></li>
+<li>Domain suburb profiles: <a href="https://help.domain.com.au/hc/en-us/articles/360018105814-Domain-Suburb-Profiles">https://help.domain.com.au/hc/en-us/articles/360018105814-Domain-Suburb-Profiles</a></li>
+<li>Domain property profile (sample, perils and zones): <a href="https://www.domain.com.au/property-profile/33-gregory-parade-kotara-nsw-2289">https://www.domain.com.au/property-profile/33-gregory-parade-kotara-nsw-2289</a></li>
+<li>Domain school catchment (sample): <a href="https://domain.com.au/school-catchment/collingwood-collegecollingwood-alternative-school-vic-3066-50180">https://domain.com.au/school-catchment/collingwood-collegecollingwood-alternative-school-vic-3066-50180</a></li>
+<li>Microburbs: <a href="https://microburbs.com.au">https://microburbs.com.au</a></li>
+</ul>
 
-<h2>6. Why these facts</h2>
-<p><span class="todo">TODO.</span> These are the first-pass questions a buyer's agent asks before booking an inspection: will it flood, burn or slip? What is next door? Will the street keep pace with the suburb? Is the guide honest?</p>
 
-<h2>7. Held-out check</h2>
-<p>The public-housing classifier (the subject G-NAF appears in the <code>surroundings/public-housing</code> flagged list) is tested against the supplied public-housing CSV: N sampled positives plus 20 control addresses. Only aggregate precision and recall are reported (<code>scripts/holdout.mjs</code> → <code>out/holdout.json</code>).</p>
-<table><tr><th>n positive</th><th>n control</th><th>TP</th><th>FP</th><th>FN</th><th>TN</th><th>unresolved</th><th>precision</th><th>recall</th></tr>
-<tr><td colspan="9"><span class="todo">placeholder: fill from out/holdout.json</span></td></tr></table>
+<h3>Our added value</h3>
+<p>One verdict, on the listing page, before the buyer pays for reports, combining hazards, public housing at two scales, street forecast, AVM and quoting behaviour, each labelled with the level it applies at.</p>
 
-<h2>8. What worked / what didn't</h2>
-<ul><li><span class="todo">TODO</span></li></ul>
-
-<p class="sub">Data: Microburbs. Incorporates or developed using G-NAF © Geoscape Australia licensed by the Commonwealth of Australia under the Open G-NAF End User Licence Agreement. Decision support, not financial or legal advice.</p>
+<p class="sub">Data: Microburbs. Incorporates or developed using G-NAF © Geoscape Australia licensed by the Commonwealth of Australia under the Open G-NAF End User Licence Agreement. Map data © OpenStreetMap contributors. Decision support, not financial or legal advice.</p>
 </main></body></html>
