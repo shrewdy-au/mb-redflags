@@ -2,7 +2,7 @@
 // API responses live only in an in-memory per-tab Map (never chrome.storage), per Microburbs licence terms.
 import { runAnalysis, finish } from './lib/pipeline';
 import type { Bundle } from './lib/rules';
-import { URL_DEBOUNCE_MS } from './lib/config';
+import { URL_DEBOUNCE_MS, PROXY_BASE, EXT_TOKEN } from './lib/config';
 import { buildMapPayload } from './lib/maplayers';
 import type { MbResult } from './lib/mb';
 import type { AddressInfo, MapPayload, Report, ToBg, ToContent } from './lib/types';
@@ -26,6 +26,20 @@ chrome.runtime.onMessage.addListener((msg: ToBg, sender, sendResponse) => {
     mapFor(tabId, msg.rowId).then(sendResponse, (e) => sendResponse({ type: 'MBRF_MAP', rowId: msg.rowId, title: 'Map', sub: '', center: null,
       address: '', layers: [], legend: [], error: String(e?.message || e) } satisfies MapPayload));
     return true; // async sendResponse
+  }
+  if (msg.type === 'AI_STATUS') {
+    fetch(`${PROXY_BASE}/health`, { headers: { 'X-Ext-Token': EXT_TOKEN } }).then((r) => r.json()).then((j) => sendResponse(!!j?.ai), () => sendResponse(false));
+    return true;
+  }
+  if (msg.type === 'AI_NEXT') {
+    const st = tabs.get(tabId);
+    if (!st?.report?.rows?.length) { sendResponse({ error: 'Run a check first.' }); return; }
+    // Only the derived rows go to the proxy (label, status, short value), never raw API payloads.
+    const rows = st.report.rows.map((r) => ({ label: r.label, status: r.status, summary: r.summary }));
+    fetch(`${PROXY_BASE}/ai/next-steps`, { method: 'POST', headers: { 'X-Ext-Token': EXT_TOKEN, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ verdict: st.report.verdict, method: msg.method, rows }) })
+      .then((r) => r.json()).then((j) => sendResponse(j?.data ? { data: j.data } : { error: j?.error || 'AI failed' }), () => sendResponse({ error: 'Proxy not reachable' }));
+    return true;
   }
   if (msg.type === 'ANALYSE') {
     // Debounce SPA URL churn: only the last address inside the window runs.

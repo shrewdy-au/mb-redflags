@@ -22,6 +22,8 @@ const ensurePanel = () => {
       },
       onAsking: (asking) => post({ type: 'ASKING', asking }),
       // The background fetches the layer through the proxy; only GeoJSON comes back (never the key).
+      aiStatus: () => chrome.runtime.sendMessage({ type: 'AI_STATUS' } satisfies ToBg) as Promise<boolean>,
+      aiNext: (method) => chrome.runtime.sendMessage({ type: 'AI_NEXT', method } satisfies ToBg) as Promise<any>,
       onMap: (rowId) => chrome.runtime.sendMessage({ type: 'MAP', rowId } satisfies ToBg) as Promise<MapPayload>
     });
   }

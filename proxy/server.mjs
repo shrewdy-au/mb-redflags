@@ -22,6 +22,19 @@ const MB_KEY = process.env.MB_KEY || '';
 const MB_BASE = (process.env.MB_BASE || 'https://api-ht.microburbs.com.au').replace(/\/+$/, '');
 const EXT_TOKEN = process.env.EXT_TOKEN || 'mb-redflags-local';
 const MOCK = process.env.MOCK === '1' || process.env.MOCK === 'true';
+// Optional AI rewrite of the Next steps (paid Anthropic API key in proxy/.env). Without it the templates are the feature.
+const AI_KEY = process.env.ANTHROPIC_API_KEY || '';
+const AI_SYSTEM = `You help a first-time property buyer in Sydney who knows nothing about property. You get a list of checks about one
+listing (label, status RED/AMBER/GREEN/GREY/INFO, a short value). Write five short sections in plain English a 15-year-old understands:
+enquire (should they enquire, one or two sentences), ask (3-4 questions for the agent's enquiry form), inspect (4-6 things to look at
+during the inspection), compare (one sentence on what to compare against other options), offer (two or three sentences on setting a
+walk-away price for the sale method). Use only the facts given; never invent numbers; this is general information, not advice.
+Reply with JSON only: {"enquire": string, "ask": string[], "inspect": string[], "compare": string, "offer": string}.`;
+async function readBody(req, limit = 65536) {
+  let size = 0; const chunks = [];
+  for await (const c of req) { size += c.length; if (size > limit) throw new Error('body too large'); chunks.push(c); }
+  return Buffer.concat(chunks).toString('utf8');
+}
 const PORT = Number(process.env.PORT || 8787);
 const HOST = '127.0.0.1';
 // Cloudflare rejects default script user agents (error 1010); send a browser-like one.
@@ -89,17 +102,39 @@ function send(res, status, body, extra = {}) {
 const server = http.createServer(async (req, res) => {
   const origin = req.headers.origin || '';
   const cors = origin.startsWith('chrome-extension://')
-    ? { 'Access-Control-Allow-Origin': origin, 'Access-Control-Allow-Headers': 'X-Ext-Token, Accept', 'Vary': 'Origin' }
+    ? { 'Access-Control-Allow-Origin': origin, 'Access-Control-Allow-Headers': 'X-Ext-Token, Accept, Content-Type', 'Access-Control-Allow-Methods': 'GET, POST', 'Vary': 'Origin' }
     : {};
   if (req.method === 'OPTIONS') { res.writeHead(origin.startsWith('chrome-extension://') ? 204 : 403, cors); return res.end(); }
   // Origin check: browsers always send Origin on cross-origin fetches; only extensions are allowed.
   // Requests with no Origin (curl, scripts/holdout.mjs) still need the shared token.
   if (origin && !origin.startsWith('chrome-extension://')) return send(res, 403, { error: 'origin not allowed' });
   if (req.headers['x-ext-token'] !== EXT_TOKEN) return send(res, 401, { error: 'missing or bad X-Ext-Token' }, cors);
+  if (req.method === 'POST' && req.url === '/ai/next-steps') {
+    if (!AI_KEY) return send(res, 503, { error: 'ANTHROPIC_API_KEY not set in proxy/.env' }, cors);
+    try {
+      const inp = JSON.parse(await readBody(req));
+      // Only derived rows (label/status/value), never raw API payloads.
+      const rows = (Array.isArray(inp.rows) ? inp.rows : []).slice(0, 40).map((r) => ({ label: String(r.label || '').slice(0, 80), status: String(r.status || ''), value: String(r.summary || '').slice(0, 160) }));
+      const user = `Verdict: ${String(inp.verdict || '')}. Sale method: ${String(inp.method || 'unknown')}.\nChecks:\n${rows.map((r) => `- ${r.label} [${r.status}]: ${r.value}`).join('\n')}`;
+      const up = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST', signal: AbortSignal.timeout(30000),
+        headers: { 'x-api-key': AI_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+        body: JSON.stringify({ model: 'claude-sonnet-5-5', max_tokens: 600, temperature: 0.2, system: AI_SYSTEM, messages: [{ role: 'user', content: user }] })
+      });
+      const j = await up.json();
+      if (!up.ok) return send(res, 502, { error: j?.error?.message || `AI HTTP ${up.status}` }, cors);
+      const text = (j.content || []).filter((c) => c.type === 'text').map((c) => c.text).join('');
+      let out; try { out = JSON.parse(text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1)); } catch { out = { enquire: text }; }
+      console.log(`${new Date().toISOString()} AI next-steps ok`);
+      return send(res, 200, { data: out }, cors);
+    } catch (e) {
+      return send(res, 502, { error: 'AI request failed' }, cors);
+    }
+  }
   if (req.method !== 'GET') return send(res, 405, { error: 'GET only' }, cors);
 
   const url = new URL(req.url, `http://${HOST}:${PORT}`);
-  if (url.pathname === '/health') return send(res, 200, { ok: true, mock: MOCK, key_loaded: !!MB_KEY }, cors);
+  if (url.pathname === '/health') return send(res, 200, { ok: true, mock: MOCK, key_loaded: !!MB_KEY, ai: !!AI_KEY }, cors);
   if (!url.pathname.startsWith('/v1/') || !ALLOW.some((re) => re.test(url.pathname))) {
     return send(res, 404, { error: 'endpoint not on allowlist' }, cors);
   }

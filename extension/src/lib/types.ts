@@ -60,7 +60,9 @@ export interface AddressInfo {
 export type ToBg =
   | { type: 'ANALYSE'; address: AddressInfo; url: string; manual?: boolean }
   | { type: 'ASKING'; asking: number | null }
-  | { type: 'MAP'; rowId: string };
+  | { type: 'MAP'; rowId: string }
+  | { type: 'AI_STATUS' }
+  | { type: 'AI_NEXT'; method: string };
 export type ToContent = { type: 'REPORT'; report: Report };
 
 // Map drawer payload: background -> content (sendResponse) -> drawer iframe (postMessage). GeoJSON only, no key.

@@ -178,6 +178,8 @@ export interface PanelHandlers {
   onManual: (address: string) => void;
   onAsking: (asking: number | null) => void;
   onMap?: (rowId: string) => Promise<MapPayload>;
+  aiStatus?: () => Promise<boolean>;
+  aiNext?: (method: string) => Promise<any>;
 }
 
 export class Panel {
@@ -200,6 +202,8 @@ export class Panel {
   private method: 'auction' | 'private' | 'eoi' = 'auction';
   private guide: number | null = null;
   private openStep = 1;
+  private ai: boolean | null = null;
+  private aiOut?: any;
   private last?: Report;
   private plain?: Report['plain'];
   private modeBtn?: HTMLButtonElement;
@@ -464,6 +468,21 @@ export class Panel {
       const p = r.plain!;
       head.append(word, h('div', 'why', p.why), h('div', 'sure', `How sure is this? ${p.sure}`));
       if (r.next) head.append(...this.steps(r));
+      // Optional AI rewrite: shown only when the proxy reports a paid key (ai:true).
+      if (this.ai === null && this.handlers.aiStatus) { this.ai = false; this.handlers.aiStatus().then((ok) => { this.ai = !!ok; if (ok && this.last) this.render(this.last); }, () => undefined); }
+      if (this.ai && this.handlers.aiNext) {
+        const box = h('div', 'pcard');
+        const bt = h('button', '', this.aiOut ? 'Rewrite again' : 'Rewrite with AI') as HTMLButtonElement;
+        bt.onclick = () => { bt.textContent = 'Writing…'; bt.disabled = true; this.handlers.aiNext!(this.method).then((j) => { this.aiOut = j?.data || { enquire: j?.error || 'AI failed' }; if (this.last) this.render(this.last); }); };
+        box.append(bt);
+        if (this.aiOut) {
+          const o = this.aiOut;
+          const add = (t: string, v: any) => { if (!v) return; box.append(h('h3', '', t)); (Array.isArray(v) ? v : [v]).forEach((x: any) => box.append(h('div', '', String(x)))); };
+          add('Enquire or not?', o.enquire); add('Ask', o.ask); add('Look for', o.inspect); add('Compare', o.compare); add('Offer', o.offer);
+          box.append(h('div', 'sure', 'Written by AI from the checks above; general information, not advice.'));
+        }
+        head.append(box);
+      }
     } else head.append(word,
       h('div', 'vline', r.state === 'done' ? r.verdictLine || '' : r.message || (r.state === 'idle' ? 'Type an address below.' : '')));
     this.body.append(head);
