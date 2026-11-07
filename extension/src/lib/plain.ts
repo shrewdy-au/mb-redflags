@@ -14,7 +14,7 @@ const NUM = ['', 'One', 'Two', 'Three'];
 function phrase(r: Row): string {
   const s = r.summary;
   switch (r.id) {
-    case 'ph_area': { const p = first(s, /([\d.]+)%/); return p ? `about 1 in ${Math.max(2, Math.round(100 / p))} homes around here are public housing` : 'a lot of homes around here are public housing'; }
+    case 'ph_area': { const p = first(s, /([\d.]+)%/); return p ? `about 1\u00a0in\u00a0${Math.max(2, Math.round(100 / p))} homes around here are public housing` : 'a lot of homes around here are public housing'; }
     case 'ph_200': return s.startsWith('this address') ? 'this home itself looks like public housing' : `${first(s, /\(([\d.]+)%\)/) ?? 'many'}% of homes within 200 m are flagged as public housing`;
     case 'street': return "this street's prices are forecast to grow slower than the suburb";
     case 'flood': case 'historical_flood': return s.includes('on property') ? 'the land is mapped as flood-prone' : 'flood-prone land is close by';
