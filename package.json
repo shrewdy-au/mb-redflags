@@ -11,7 +11,10 @@
     "dev": "node scripts/dev.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "holdout": "node scripts/holdout.mjs",
-    "holdout:sa1": "node scripts/holdout-sa1.mjs"
+    "holdout:sa1": "node scripts/holdout-sa1.mjs",
+    "smoke": "node scripts/smoke.mjs",
+    "smoke:open": "node scripts/smoke.mjs \"34 Corben Street, Surry Hills NSW 2010|2200000\" \"65 Kellick Street, Waterloo NSW 2017|1900000\" \"11 Chelsea Street, Redfern NSW 2016|1900000\"",
+    "proxy:open": "OPEN_DATA=1 node proxy/server.mjs"
   },
   "license": "MIT",
   "devDependencies": {

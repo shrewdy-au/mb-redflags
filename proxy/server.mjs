@@ -22,6 +22,14 @@ const MB_KEY = process.env.MB_KEY || '';
 const MB_BASE = (process.env.MB_BASE || 'https://api-ht.microburbs.com.au').replace(/\/+$/, '');
 const EXT_TOKEN = process.env.EXT_TOKEN || 'mb-redflags-local';
 const MOCK = process.env.MOCK === '1' || process.env.MOCK === 'true';
+// OPEN_DATA=1: answer the open-data-backed paths from the local PostGIS (backend/), pass the rest (street forecast,
+// agent quoting) to Microburbs as before. See backend/README.md. Needs `cd backend && npm install && make ingest`.
+const OPEN_DATA = process.env.OPEN_DATA === '1' || process.env.OPEN_DATA === 'true';
+let openApi = null;
+if (OPEN_DATA) {
+  try { openApi = await import(new URL('../backend/src/api.mjs', import.meta.url)); }
+  catch (e) { console.error(`OPEN_DATA=1 but backend/src/api.mjs failed to load: ${e?.message || e}`); process.exit(1); }
+}
 // Optional AI rewrite of the Next steps (paid Anthropic API key in proxy/.env). Without it the templates are the feature.
 // (No temperature: this model rejects it; the JSON-only system prompt keeps output tight.)
 const AI_KEY = process.env.ANTHROPIC_API_KEY || '';
@@ -56,7 +64,10 @@ const ALLOW = [
   /^\/v1\/suburbs\/[^/]+\/development\/(applications|council-rates)$/,
   /^\/v1\/properties\/[A-Za-z0-9]+\/valuation\/negative-gearing$/,
   // Used only by scripts/ (demo listing pick + held-out check), never by the extension.
-  /^\/v1\/suburbs\/[^/]+\/(listings\/for-sale|properties|demographics\/tenure)$/
+  /^\/v1\/suburbs\/[^/]+\/(listings\/for-sale|properties|demographics\/tenure)$/,
+  // Open-data-only routes (OPEN_DATA=1): no Microburbs equivalent, served from backend/ PostGIS.
+  /^\/v1\/properties\/[A-Za-z0-9]+\/development\/applications$/,
+  /^\/v1\/suburbs\/[^/]+\/(demographics\/income|market\/(median-rent|negative-gearing))$/
 ];
 
 // --- token bucket: 8 req/s (API allows ~10) ---
@@ -135,11 +146,29 @@ const server = http.createServer(async (req, res) => {
   if (req.method !== 'GET') return send(res, 405, { error: 'GET only' }, cors);
 
   const url = new URL(req.url, `http://${HOST}:${PORT}`);
-  if (url.pathname === '/health') return send(res, 200, { ok: true, mock: MOCK, key_loaded: !!MB_KEY, ai: !!AI_KEY }, cors);
+  if (url.pathname === '/health') {
+    let open_data = OPEN_DATA ? { enabled: true } : { enabled: false };
+    if (openApi) { try { open_data = { enabled: true, ...(await openApi.health()) }; } catch (e) { open_data = { enabled: true, error: 'database not reachable' }; } }
+    return send(res, 200, { ok: true, mock: MOCK, key_loaded: !!MB_KEY, ai: !!AI_KEY, open_data }, cors);
+  }
   if (!url.pathname.startsWith('/v1/') || !ALLOW.some((re) => re.test(url.pathname))) {
     return send(res, 404, { error: 'endpoint not on allowlist' }, cors);
   }
 
+  if (openApi) {
+    // Open-data path first; null means "Microburbs-only row" (street/profile, agent-quoting) and falls through.
+    const t0 = Date.now();
+    try {
+      const r = await openApi.handle(decodeURIComponent(url.pathname), url.searchParams);
+      if (r) {
+        console.log(`${new Date().toISOString()} ${r.status} ${url.pathname} ${Date.now() - t0}ms [open-data]`);
+        return send(res, r.status, r.body, { ...cors, 'X-MB-Mock': '0', 'X-Open-Data': '1' });
+      }
+    } catch (e) {
+      console.log(`${new Date().toISOString()} ERR ${url.pathname} open-data: ${e?.message || e}`);
+      return send(res, 500, { error: 'open-data query failed', detail: String(e?.message || e) }, cors);
+    }
+  }
   if (MOCK) {
     const r = mockResponse(decodeURIComponent(url.pathname), url.searchParams);
     return send(res, r.status, r.body, { ...cors, 'X-MB-Mock': '1' });
@@ -167,5 +196,5 @@ const server = http.createServer(async (req, res) => {
 
 if (MOCK) loadFixtures();
 server.listen(PORT, HOST, () => {
-  console.log(`mb-redflags proxy on http://${HOST}:${PORT}  mode=${MOCK ? `MOCK (${fixtures.length} synthetic fixtures)` : 'LIVE'}  key=${MB_KEY ? 'loaded' : 'MISSING'}  base=${MB_BASE}`);
+  console.log(`mb-redflags proxy on http://${HOST}:${PORT}  mode=${MOCK ? `MOCK (${fixtures.length} synthetic fixtures)` : 'LIVE'}${OPEN_DATA ? ' + OPEN_DATA (PostGIS for everything but forecast/quoting)' : ''}  key=${MB_KEY ? 'loaded' : 'MISSING'}  base=${MB_BASE}`);
 });

@@ -1,0 +1,5 @@
+# Downloaded open data and extracted files. Large, re-downloadable, and some licences (G-NAF EULA) ask
+# that redistribution carries the attribution — so nothing under data/ is committed to this public repo.
+data/
+node_modules/
+.env

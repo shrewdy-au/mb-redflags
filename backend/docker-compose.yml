@@ -1,0 +1,30 @@
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: mbrf-postgis
+    environment:
+      POSTGRES_USER: mbrf
+      POSTGRES_PASSWORD: mbrf
+      POSTGRES_DB: mbrf
+    command: >
+      postgres -c shared_buffers=1GB -c work_mem=64MB -c maintenance_work_mem=1GB
+               -c max_wal_size=4GB -c checkpoint_timeout=30min -c synchronous_commit=off
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - mbrf-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mbrf -d mbrf"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+  # ogr2ogr for the SEED shapefiles (coastal erosion). `docker compose --profile tools run --rm gdal ...`
+  gdal:
+    image: ghcr.io/osgeo/gdal:alpine-small-3.9.2
+    profiles: ["tools"]
+    volumes:
+      - ./data:/data
+    entrypoint: ["ogr2ogr"]
+
+volumes:
+  mbrf-pgdata:
