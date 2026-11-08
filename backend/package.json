@@ -1,0 +1,19 @@
+{
+  "name": "mb-redflags-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Open-data (CC BY) backend for mb-redflags: PostGIS + ingest scripts. No Microburbs data is stored here.",
+  "scripts": {
+    "schema": "node src/schema.mjs",
+    "ingest": "node src/ingest.mjs",
+    "refresh:weekly": "node src/ingest.mjs planning hazards roads easements",
+    "refresh:nightly": "node src/ingest.mjs da",
+    "check": "node src/check.mjs"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0",
+    "pg": "^8.13.1",
+    "pg-copy-streams": "^6.0.6"
+  }
+}

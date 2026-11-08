@@ -8,6 +8,8 @@ import { ceilingOf, money } from '../extension/src/lib/nextsteps';
 import { buildAddressInfo } from '../extension/src/content/address';
 
 const argv = process.argv.slice(2);
+// JSON_OUT=path writes every report (rows + verdict) as JSON, for backend/scripts/validate.mjs.
+const jsonOut: Array<{ address: string; asking: number | null; report: any }> = [];
 const cases: Array<[string, number | null]> = argv.length
   ? argv.map((a) => { const [addr, ask] = a.split('|'); return [addr, ask ? Number(ask) : null]; })
   : [
@@ -20,6 +22,7 @@ for (const [addr, asking] of cases) {
   const info = buildAddressInfo(addr)!;
   const out = await runAnalysis(info, asking);
   const r = out!.report;
+  jsonOut.push({ address: addr, asking, report: r });
   if (process.env.DUMP && out?.bundle) {
     mkdirSync('out/raw', { recursive: true });
     writeFileSync(`out/raw/${addr.replace(/[^A-Za-z0-9]+/g, '_')}.json`, JSON.stringify(out.bundle, null, 1));
@@ -44,3 +47,4 @@ for (const [addr, asking] of cases) {
   }
   for (const row of r.rows) console.log(`   ${row.status.padEnd(5)} ${row.label.padEnd(32)} ${row.summary}  [${row.level}${row.distance_m !== undefined && row.distance_m !== null ? `, ${Math.round(row.distance_m)} m` : ''}]${row.detail ? `\n         ${row.detail}` : ''}`);
 }
+if (process.env.JSON_OUT) { mkdirSync('out', { recursive: true }); writeFileSync(process.env.JSON_OUT, JSON.stringify(jsonOut, null, 1)); console.log(`\nwrote ${process.env.JSON_OUT}`); }
